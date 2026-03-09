@@ -109,10 +109,20 @@ namespace Balanceador
             Produto = new List<ParteEq>();
         }
 
-        public List<int> IndentificaAtomosUnicos(ParteEq parte)
+        public List<int> IndentificaAtomosUnicos(ParteEq reag,ParteEq prod)
         {
             List<int> atomosUnicos = new List<int>(); 
-            foreach (var item in parte.Moleculas)
+            foreach (var item in reag.Moleculas)
+            {
+                foreach(var itemP in item.Elementos)
+                {
+                 if(!atomosUnicos.Contains(itemP.Z))
+                    {
+                        atomosUnicos.Add(itemP.Z);
+                    } 
+                }
+            }
+            foreach (var item in prod.Moleculas)
             {
                 foreach(var itemP in item.Elementos)
                 {
@@ -125,8 +135,23 @@ namespace Balanceador
 
             return atomosUnicos;
         }
+        public LinkedList<List<int>> ObtemMatriz(List<int> atomosUnicos)
+        {
+            LinkedList<List<int>> matriz = new LinkedList<List<int>>();
 
-        
+            foreach (var item in atomosUnicos)
+            {
+                
+                List<int> linha = new List<int>();
+                
+
+                matriz.AddLast(linha);
+            }
+
+            return matriz;
+        }
+
+
         /*Hoje 9 de março em campinas-COTUCA-LabLapa as 17:00 Rafael Schmal
         fiz o esqueleto de um programa que balanceia equaçoes
         tentei fazer com C# em POO com as classes Elemento, Molecula, ParteEq e EquaçãoQuimica
