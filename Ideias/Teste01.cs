@@ -7,17 +7,9 @@ using System.Text;
 namespace Balanceador
 {
   class Elemento{
-    private int z;//Numero Atomico se representa com Z
-    private float a;//Numero de massa se representa com Z
-    private int e;//Numero de Eletrons se representa com Z
-    private double raio;
-    private int quantidade;//O2
-    private float eletronegatividade;
-
-
-    public int Z {get;set;}
-    public float A {get;set;}
-    public int E {get;set;}
+    public int Z {get;set;}//Numero Atomico se representa com Z
+    public float A {get;set;}//Numero de massa se representa com A
+    public int E {get;set;}//Numero de Eletrons se representa com E
     public double Raio {get;set;}
     public int Quantidade {get;set;}
     public float Eletronegatividade{get;set;}
@@ -44,8 +36,6 @@ namespace Balanceador
 
     class Molecula
     {
-        private int coeficiente;
-        private List<Elemento> elementos;
         
         public List<Elemento> Elementos { get; set; }
         public int Coeficiente { get; set; } // número na frente (ex: 2H2O)
@@ -64,7 +54,7 @@ namespace Balanceador
         {
             int numAtomos = 0;
 
-            foreach(var i in elementos)
+            foreach(var i in Elementos)
             {
                 if(i.Z == nZ)numAtomos+= i.Quantidade * Coeficiente;
             }
@@ -101,12 +91,12 @@ namespace Balanceador
 
     class EquacaoQuimica
     {
-        public List<ParteEq> Reagente;
-        public List<ParteEq> Produto;
+        public ParteEq Reagente;
+        public ParteEq Produto;
 
         public EquacaoQuimica(){
-            Reagente = new List<ParteEq>();
-            Produto = new List<ParteEq>();
+            Reagente = new ParteEq();
+            Produto = new ParteEq();
         }
 
         public List<int> IndentificaAtomosUnicos(ParteEq reag,ParteEq prod)
@@ -135,17 +125,24 @@ namespace Balanceador
 
             return atomosUnicos;
         }
-        public LinkedList<List<int>> ObtemMatriz(List<int> atomosUnicos)
+        public List<List<int>> ObtemMatriz(List<int> atomosUnicos)
         {
-            LinkedList<List<int>> matriz = new LinkedList<List<int>>();
+            List<List<int>> matriz = new List<List<int>>();
 
-            foreach (var item in atomosUnicos)
+            foreach (var atomo in atomosUnicos)
             {
                 
                 List<int> linha = new List<int>();
-                
+                foreach (var reagente in Reagente)
+                {
+                    linha.Add(reagente.contarAtomos(atomo));
+                }
+                foreach (var produto in Produto)
+                {                    
+                    linha.Add(-produto.contarAtomos(atomo));
+                }
 
-                matriz.AddLast(linha);
+                matriz.Add(linha);
             }
 
             return matriz;
@@ -162,6 +159,20 @@ namespace Balanceador
         18:30 - ADD Vitor Ohland por Watszap
         fiz todo o esqueleto agora passei para os metodos vou fazer o metodo ContarAtomo para Elemento,molecula e ParteQe;
         fazer o metodo indentificarAtomosUnicos para Equaçãoquimica porque tive a idaia de Balanciar por matriz e resolver a matriz por gauss
+        {
+            gera lista de elementos únicos
+
+            gera matriz
+
+            resolve sistema
+
+            define coeficientes das moléculas
+        }
+        H2O + CO2 -> H2CO3
+        [2,0,-2]
+        [1,2,-3]
+        [0,1,-1]
+        
         */ 
 
         //vai pegar um input de uma equação e transformala nas classes -X
