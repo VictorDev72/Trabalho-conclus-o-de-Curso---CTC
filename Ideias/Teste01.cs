@@ -3,42 +3,41 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using System.Xml.Schema;
 
 namespace Balanceador
 {
-    class Elemento
+  class Elemento{
+    public int Z {get;set;}//Numero Atomico se representa com Z
+    public float A {get;set;}//Numero de massa se representa com A
+    public int E {get;set;}//Numero de Eletrons se representa com E
+    public double Raio {get;set;}
+    public int Quantidade {get;set;}
+    public float Eletronegatividade{get;set;}
+
+    public Elemento(int z, float a, int e, double raio, int quantidade, float eletronegatividade)
     {
-        public int Z { get; set; }//Numero Atomico se representa com Z
-        public float A { get; set; }//Numero de massa se representa com A
-        public int E { get; set; }//Numero de Eletrons se representa com E
-        public double Raio { get; set; }
-        public int Quantidade { get; set; }
-        public float Eletronegatividade { get; set; }
+        Z = z;
+        A = a;
+        E = e;
+        Raio = raio;
+        Quantidade = quantidade;
+        Eletronegatividade = eletronegatividade;
+    }
 
-        public Elemento(int z, float a, int e, double raio, int quantidade, float eletronegatividade)
-        {
-            Z = z;
-            A = a;
-            E = e;
-            Raio = raio;
-            Quantidade = quantidade;
-            Eletronegatividade = eletronegatividade;
-        }
-
-        public void ionizar(int valor)
+    public void ionizar(int valor)
         {
             E += valor;
         }
-        public void mudarQuantidade(int valor)
+    public void mudarQuantidade(int valor)
         {
-            if(Quantidade >= 0) { Quantidade += valor; }
-            else {Console.WriteLine("Quantidade de átomos não pode ser negativa.");}
+            Quantidade += valor;
         }
-    }
+}  
 
     class Molecula
     {
-
+        
         public List<Elemento> Elementos { get; set; }
         public int Coeficiente { get; set; } // número na frente (ex: 2H2O)
 
@@ -56,23 +55,22 @@ namespace Balanceador
         {
             int numAtomos = 0;
 
-            foreach (var i in Elementos)
+            foreach(var i in Elementos)
             {
-                if (i.Z == nZ) numAtomos += i.Quantidade * Coeficiente;
+                if(i.Z == nZ)numAtomos+= i.Quantidade * Coeficiente;
             }
             return numAtomos;
-        }
+        } 
     }
 
     class ParteEq
     {
- 
-        public List<Molecula> Moleculas { get; set; }
+        public List<Molecula> Moleculas {get; set;}
 
         public ParteEq()
         {
             Moleculas = new List<Molecula>();
-        }
+        } 
 
         public void AdicionarMolecula(Molecula M)
         {
@@ -82,7 +80,7 @@ namespace Balanceador
         public int contarAtomos(int Z)
         {
             int atomos = 0;
-            foreach (var mol in Moleculas)
+            foreach(var mol in Moleculas)
             {
                 atomos += mol.contarAtomos(Z);
             }
@@ -97,59 +95,102 @@ namespace Balanceador
         public ParteEq Reagente;
         public ParteEq Produto;
 
-        public EquacaoQuimica()
-        {
+        public EquacaoQuimica(){
             Reagente = new ParteEq();
             Produto = new ParteEq();
         }
 
-        public List<int> IndentificaAtomosUnicos(ParteEq reag, ParteEq prod) 
+        public List<int> IndentificaAtomosUnicos(ParteEq reag,ParteEq prod)
         {
-            List<int> atomosUnicos = new List<int>();
-            foreach (var item in reag.Moleculas) 
+            List<int> atomosUnicos = new List<int>(); 
+            foreach (var item in reag.Moleculas)
             {
-                foreach (var itemP in item.Elementos)
+                foreach(var itemP in item.Elementos)
                 {
-                    if (!atomosUnicos.Contains(itemP.Z))
+                 if(!atomosUnicos.Contains(itemP.Z))
                     {
                         atomosUnicos.Add(itemP.Z);
-                    }
+                    } 
                 }
             }
-            foreach (var item in prod.Moleculas) 
+            foreach (var item in prod.Moleculas)
             {
-                foreach (var itemP in item.Elementos)
+                foreach(var itemP in item.Elementos)
                 {
-                    if (!atomosUnicos.Contains(itemP.Z))
+                 if(!atomosUnicos.Contains(itemP.Z))
                     {
                         atomosUnicos.Add(itemP.Z);
-                    }
+                    } 
                 }
             }
 
             return atomosUnicos;
         }
-        public List<List<double>> ObtemMatriz(List<int> atomosUnicos)
+        public List<List<int>> ObtemMatriz(List<int> atomosUnicos)
         {
-            List<List<double>> matriz = new List<List<double>>();
+            List<List<int>> matriz = new List<List<int>>();
 
             foreach (var atomo in atomosUnicos)
             {
-
-                List<double> linha = new List<double>();
-                foreach (var reagente in Reagente.Moleculas) 
+                
+                List<int> linha = new List<int>();
+                foreach (var reagente in Reagente)
                 {
                     linha.Add(reagente.contarAtomos(atomo));
                 }
-                foreach (var produto in Produto.Moleculas) 
-                {
-                    linha.Add(produto.contarAtomos(atomo));
+                foreach (var produto in Produto)
+                {                    
+                    linha.Add(-produto.contarAtomos(atomo));
                 }
 
                 matriz.Add(linha);
             }
 
             return matriz;
+        }
+        public List<int> ResolverMatriz(List<List<int>> matriz)
+        {
+            int rows = matriz.GetLength(0);
+            int cols = matriz.GetLength(1);
+            List<int> pivoCols = new();
+            List<List<int>> referencia = matriz.Clone();
+
+            int pivoRow = 0;
+            for(int col = 0; col < cols && pivoRow < rows; col++)
+            {
+                for(int linha = pivoRow; linha < rows; linha++)
+                {
+                    int bestrow = -1;
+                    if (!referencia[linha, col].IsZero)
+                    {
+                        bestrow = linha;
+                        break;
+                    }
+                }
+            
+            if (bestRow == -1)
+                continue;
+
+            SwapRows(referencia, pivoRow, bestRow);
+
+            Fraction pivo = referencia[pivoRow,col];
+            for(int c = 0; c > cols; c++)
+                {
+                    referencia[pivoRow,c] = referencia[pivoRow,c]/pivo;
+                }
+            for (int r = 0; r < rows; r++)
+            {
+                if (r == pivotRow) continue;
+                if (referencia[r, col].IsZero) continue;
+
+                Fraction factor = referencia[r, col];
+                for (int c = 0; c < cols; c++)
+                    referencia[r, c] = referencia[r, c] - factor * referencia[pivotRow, c];
+            }
+
+            pivotCols.Add(col);
+            pivotRow++;
+            }
         }
 
 
@@ -162,7 +203,7 @@ namespace Balanceador
 
         18:30 - ADD Vitor Ohland por Watszap
         fiz todo o esqueleto agora passei para os metodos vou fazer o metodo ContarAtomo para Elemento,molecula e ParteQe;
-        fazer o metodo indentificarAtomosUnicos para EquaçãoQuimica porque tive a idaia de Balanciar por matriz e resolver a matriz por gauss
+        fazer o metodo indentificarAtomosUnicos para Equaçãoquimica porque tive a idaia de Balanciar por matriz e resolver a matriz por gauss
         {
             gera lista de elementos únicos
 
@@ -177,7 +218,7 @@ namespace Balanceador
         [1,2,-3]
         [0,1,-1]
         
-        */
+        */ 
 
         //vai pegar um input de uma equação e transformala nas classes -X
         //nao seria mais facil so fazer direto do input?-X
@@ -194,22 +235,6 @@ namespace Balanceador
 
             define coeficientes das moléculas
         */
-
-        /*
-        hoje as 00:20 Victor fernandes
-        fiz algumas alterações no codigo, coloquei .Moleculas para acessar a lista de moleculas dentro da classe ParteEq, pórem ainda a duvidas se funciona;
-        bom tava pensando em realmente deixar completo a lista de atomos, pois acredito eu q ficaria mais facil;
-        li o codigo é tenho algumas duvidas e muito a esclarecer, mudei algumas coisas como:
-
-        .Moleculas para acessar a lista de moleculas dentro da classe ParteEq, pórem ainda a duvidas se funciona;
-        troquei o tipo da matriz para double, pois acredito que seja mais facil de resolver o sistema de equação depois;
-        coloquei um if para evitar que a quantidade de átomos fique negativa, pois isso não faz sentido;
-        começei a fazer a matriz de gauss jordan;
-
-        amanha possivelmente vou terminar a matriz de gauss jordan;
-
-        Encerro aqui as 1:37 pm
-         */
 
     }
 }
