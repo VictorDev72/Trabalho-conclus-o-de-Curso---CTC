@@ -1,43 +1,46 @@
 using System;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Xml.Schema;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Balanceador
 {
-  class Elemento{
-    public int Z {get;set;}//Numero Atomico se representa com Z
-    public float A {get;set;}//Numero de massa se representa com A
-    public int E {get;set;}//Numero de Eletrons se representa com E
-    public double Raio {get;set;}
-    public int Quantidade {get;set;}
-    public float Eletronegatividade{get;set;}
-
-    public Elemento(int z, float a, int e, double raio, int quantidade, float eletronegatividade)
+    class Elemento
     {
-        Z = z;
-        A = a;
-        E = e;
-        Raio = raio;
-        Quantidade = quantidade;
-        Eletronegatividade = eletronegatividade;
-    }
+        public int Z { get; set; }//Numero Atomico se representa com Z
+        public float A { get; set; }//Numero de massa se representa com A
+        public int E { get; set; }//Numero de Eletrons se representa com E
+        public double Raio { get; set; }
+        public int Quantidade { get; set; }
+        public float Eletronegatividade { get; set; }
 
-    public void ionizar(int valor)
+        public Elemento(int z, float a, int e, double raio, int quantidade, float eletronegatividade)
+        {
+            Z = z;
+            A = a;
+            E = e;
+            Raio = raio;
+            Quantidade = quantidade;
+            Eletronegatividade = eletronegatividade;
+        }
+
+        public void ionizar(int valor)
         {
             E += valor;
         }
-    public void mudarQuantidade(int valor)
+        public void mudarQuantidade(int valor)
         {
             Quantidade += valor;
         }
-}  
+    }
 
     class Molecula
     {
-        
+
         public List<Elemento> Elementos { get; set; }
         public int Coeficiente { get; set; } // número na frente (ex: 2H2O)
 
@@ -55,22 +58,22 @@ namespace Balanceador
         {
             int numAtomos = 0;
 
-            foreach(var i in Elementos)
+            foreach (var i in Elementos)
             {
-                if(i.Z == nZ)numAtomos+= i.Quantidade * Coeficiente;
+                if (i.Z == nZ) numAtomos += i.Quantidade * Coeficiente;
             }
             return numAtomos;
-        } 
+        }
     }
 
     class ParteEq
     {
-        public List<Molecula> Moleculas {get; set;}
+        public List<Molecula> Moleculas { get; set; }
 
         public ParteEq()
         {
             Moleculas = new List<Molecula>();
-        } 
+        }
 
         public void AdicionarMolecula(Molecula M)
         {
@@ -80,7 +83,7 @@ namespace Balanceador
         public int contarAtomos(int Z)
         {
             int atomos = 0;
-            foreach(var mol in Moleculas)
+            foreach (var mol in Moleculas)
             {
                 atomos += mol.contarAtomos(Z);
             }
@@ -95,32 +98,33 @@ namespace Balanceador
         public ParteEq Reagente;
         public ParteEq Produto;
 
-        public EquacaoQuimica(){
+        public EquacaoQuimica()
+        {
             Reagente = new ParteEq();
             Produto = new ParteEq();
         }
 
-        public List<int> IndentificaAtomosUnicos(ParteEq reag,ParteEq prod)
+        public List<int> IndentificaAtomosUnicos(ParteEq reag, ParteEq prod)
         {
-            List<int> atomosUnicos = new List<int>(); 
+            List<int> atomosUnicos = new List<int>();
             foreach (var item in reag.Moleculas)
             {
-                foreach(var itemP in item.Elementos)
+                foreach (var itemP in item.Elementos)
                 {
-                 if(!atomosUnicos.Contains(itemP.Z))
+                    if (!atomosUnicos.Contains(itemP.Z))
                     {
                         atomosUnicos.Add(itemP.Z);
-                    } 
+                    }
                 }
             }
             foreach (var item in prod.Moleculas)
             {
-                foreach(var itemP in item.Elementos)
+                foreach (var itemP in item.Elementos)
                 {
-                 if(!atomosUnicos.Contains(itemP.Z))
+                    if (!atomosUnicos.Contains(itemP.Z))
                     {
                         atomosUnicos.Add(itemP.Z);
-                    } 
+                    }
                 }
             }
 
@@ -132,14 +136,14 @@ namespace Balanceador
 
             foreach (var atomo in atomosUnicos)
             {
-                
+
                 List<int> linha = new List<int>();
-                foreach (var reagente in Reagente)
+                foreach (var reagente in Reagente.Moleculas)
                 {
                     linha.Add(reagente.contarAtomos(atomo));
                 }
-                foreach (var produto in Produto)
-                {                    
+                foreach (var produto in Produto.Moleculas)
+                {
                     linha.Add(-produto.contarAtomos(atomo));
                 }
 
@@ -148,51 +152,62 @@ namespace Balanceador
 
             return matriz;
         }
-        public List<int> ResolverMatriz(List<List<int>> matriz)
+        public List<int> ResolverMatriz(Fracao[,] matriz)
         {
             int rows = matriz.GetLength(0);
             int cols = matriz.GetLength(1);
             List<int> pivoCols = new();
-            List<List<int>> referencia = matriz.Clone();
+            Fracao[,] referencia = matriz.Clone();
 
             int pivoRow = 0;
-            for(int col = 0; col < cols && pivoRow < rows; col++)
+            for (int col = 0; col < cols && pivoRow < rows; col++)
             {
-                for(int linha = pivoRow; linha < rows; linha++)
+                int bestRow = -1;
+                for (int linha = pivoRow; linha < rows; linha++)
                 {
-                    int bestrow = -1;
+                    
                     if (!referencia[linha, col].IsZero)
                     {
-                        bestrow = linha;
+                        bestRow = linha;
                         break;
                     }
                 }
-            
-            if (bestRow == -1)
-                continue;
 
-            SwapRows(referencia, pivoRow, bestRow);
+                if (bestRow == -1)
+                    continue;
 
-            Fraction pivo = referencia[pivoRow,col];
-            for(int c = 0; c > cols; c++)
+                TrocaLinha(referencia, pivoRow, bestRow);
+
+                Fracao pivo = referencia[pivoRow, col];
+                for (int c = 0; c > cols; c++)
                 {
-                    referencia[pivoRow,c] = referencia[pivoRow,c]/pivo;
+                    referencia[pivoRow, c] = referencia[pivoRow, c] / pivo;
                 }
-            for (int r = 0; r < rows; r++)
+                for (int r = 0; r < rows; r++)
+                {
+                    if (r == pivoRow) continue;
+                    if (referencia[r, col].IsZero) continue;
+
+                    Fracao factor = referencia[r, col];
+                    for (int c = 0; c < cols; c++)
+                        referencia[r, c] = referencia[r, c] - factor * referencia[pivoRow, c];
+                }
+
+                pivoCols.Add(col);
+                pivoRow++;
+            }
+
+            var varLivre = Enumerable.Range(0, cols).Except(pivoCols).ToList();
+            if (varLivre.Count == 0)
             {
-                if (r == pivotRow) continue;
-                if (referencia[r, col].IsZero) continue;
-
-                Fraction factor = referencia[r, col];
-                for (int c = 0; c < cols; c++)
-                    referencia[r, c] = referencia[r, c] - factor * referencia[pivotRow, c];
+                throw new InvalidOperationException("a matriz so tem solução trivial");
             }
 
-            pivotCols.Add(col);
-            pivotRow++;
-            }
+            Fracao[] solucao = Enumerable.Repeat(Fracao.Zero, cols).ToArray();
         }
 
+
+    
 
         /*Hoje 9 de março em campinas-COTUCA-LabLapa as 17:00 Rafael Schmal
         fiz o esqueleto de um programa que balanceia equaçoes
@@ -218,7 +233,7 @@ namespace Balanceador
         [1,2,-3]
         [0,1,-1]
         
-        */ 
+        */
 
         //vai pegar um input de uma equação e transformala nas classes -X
         //nao seria mais facil so fazer direto do input?-X
@@ -235,6 +250,17 @@ namespace Balanceador
 
             define coeficientes das moléculas
         */
+        private void TrocaLinha(Fracao[,] matriz, int original, int troca)
+        {
+
+        }
 
     }
+    
+    public class Fracao
+    {
+
+    }
+
 }
+
