@@ -197,13 +197,26 @@ namespace Balanceador
                 pivoRow++;
             }
 
-            var varLivre = Enumerable.Range(0, cols).Except(pivoCols).ToList();
-            if (varLivre.Count == 0)
+            var variaveisLivres = Enumerable.Range(0, cols).Except(pivoCols).ToList();
+            if (variaveisLivres.Count == 0)
             {
                 throw new InvalidOperationException("a matriz so tem solução trivial");
             }
 
             Fracao[] solucao = Enumerable.Repeat(Fracao.Zero, cols).ToArray();
+
+            int varLivre = freeCols.Last();
+            solcao[varLivre] = Fraction.One;
+            for(i = variaveisLivres.Count; i > 0; i--){
+
+                col = pivoCols.Count;
+                Fraction sum = Fraction.One;
+                for(c = col + 1; c < cols; c++)
+                {
+                    sum += referencia[i,c] * solucao[c];
+                }
+                solucao[col] = - sum;
+            }
         }
 
 
