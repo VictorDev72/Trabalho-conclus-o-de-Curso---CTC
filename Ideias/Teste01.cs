@@ -205,18 +205,20 @@ namespace Balanceador
 
             Fracao[] solucao = Enumerable.Repeat(Fracao.Zero, cols).ToArray();
 
-            int varLivre = freeCols.Last();
+            int varLivre = variaveisLivres.Last();
             solcao[varLivre] = Fraction.One;
             for(i = variaveisLivres.Count; i > 0; i--){
 
                 col = pivoCols.Count;
-                Fraction sum = Fraction.One;
+                Fraction suma = Fraction.One;
                 for(c = col + 1; c < cols; c++)
                 {
-                    sum += referencia[i,c] * solucao[c];
+                    soma += referencia[i,c] * solucao[c];
                 }
-                solucao[col] = - sum;
+                solucao[col] = - soma;
             }
+
+            return NaturalizaInteitros(solucao)
         }
 
 
@@ -266,6 +268,10 @@ namespace Balanceador
         private void TrocaLinha(Fracao[,] matriz, int original, int troca)
         {
 
+        }
+        private List<int> NaturalizaInteitros(Fracao[] modelo)
+        {
+            
         }
 
     }
