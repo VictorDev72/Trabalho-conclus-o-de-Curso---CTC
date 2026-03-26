@@ -7,6 +7,7 @@ using System.Text;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+
 namespace Balanceador
 {
     class Elemento
@@ -206,7 +207,7 @@ namespace Balanceador
             Fracao[] solucao = Enumerable.Repeat(Fracao.Zero, cols).ToArray();
 
             int varLivre = variaveisLivres.Last();
-            solcao[varLivre] = Fraction.One;
+            solucao[varLivre] = Fracao.One;
             for(i = variaveisLivres.Count; i > 0; i--){
 
                 col = pivoCols.Count;
@@ -218,8 +219,64 @@ namespace Balanceador
                 solucao[col] = - soma;
             }
 
-            return NaturalizaInteitros(solucao)
+            return NaturalizaInteitros(solucao);
         }
+        private void TrocaLinha(Fracao[,] matriz, int original, int troca)
+        {
+            List<Fracao> beckup = new List<Fracao>();
+            for (int i = 0; i < matriz.GetLength(1); i++)
+            {
+                beckup.Add(matriz[original,i]);
+            }
+            for(int t = 0;t < matriz.GetLength(1); t++)
+            {
+                matriz[original,t] = matriz[troca,t];
+                matriz[troca,t] = beckup[t];
+            }
+        }
+        private List<int> NaturalizaInteitros(Fracao[] modelo)
+        {
+            //cria os resultados inteiros
+            BigInteger mmc = 1;
+            List<int> resultado = new List<int>();
+            List<int> res = new List<int>();
+            foreach (var item in modelo)            {
+                mmc = MMC(mmc, item.Denominator);
+            }
+            foreach (var f in modelo)
+                res.Add((int)(f.Numerator * (mmc / f.Denominator)));
+            
+
+            //cria os resultados absolutos
+            BigInteger mdc = 1;
+            foreach (var item in res)            {
+                if (item != 0)
+                    mdc = BigInteger.GreatestCommonDivisor(mdc, BigInteger.Abs(item));
+
+            }
+            foreach (var f in modelo)
+                resultado.Add((int)(f.Numerator * (mmc / f.Denominator))/mdc);
+            for (int i = 0; i < resultado.Count; i++)
+                resultado[i] /= mdc;
+                if(resultado[i] < 0)
+                {
+                    resultado[i] = -resultado[i];
+                }
+             return resultado;
+        }
+        private BigInteger MMC(BigInteger x,BigInteger y)
+        {
+            return BigInteger.Abs(x*y)/BigInteger.GreatestCommonDivisor(x,y);
+        }
+
+    }
+    
+    public class Fracao
+    {
+
+    }
+
+}
 
 
     
@@ -265,21 +322,4 @@ namespace Balanceador
 
             define coeficientes das moléculas
         */
-        private void TrocaLinha(Fracao[,] matriz, int original, int troca)
-        {
-
-        }
-        private List<int> NaturalizaInteitros(Fracao[] modelo)
-        {
-            
-        }
-
-    }
-    
-    public class Fracao
-    {
-
-    }
-
-}
 
