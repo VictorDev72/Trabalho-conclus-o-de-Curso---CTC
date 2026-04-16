@@ -1,12 +1,11 @@
 using System;
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-
+using Ideias;
 
 namespace Balanceador
 {
@@ -268,11 +267,6 @@ namespace Balanceador
         {
             return BigInteger.Abs(x*y)/BigInteger.GreatestCommonDivisor(x,y);
         }
-
-    }
-    
-    public class Fracao
-    {
 
     }
 

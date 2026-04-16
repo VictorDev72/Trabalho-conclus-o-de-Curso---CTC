@@ -1,6 +1,9 @@
 using System;
+using System.Numerics;
 
-public class Fracao
+namespace Ideias
+{
+    public class Fracao
 {
     private int numerador;
     private int denominador;
@@ -18,6 +21,20 @@ public class Fracao
 
     public int Numerador => numerador;
     public int Denominador => denominador;
+
+    public BigInteger Numerator => (BigInteger)numerador;
+    public BigInteger Denominator => (BigInteger)denominador;
+
+    public bool IsZero => numerador == 0;
+
+    public static Fracao Zero => new Fracao(0, 1);
+    public static Fracao One => new Fracao(1, 1);
+
+    public static Fracao operator +(Fracao a, Fracao b) => a.Somar(b);
+    public static Fracao operator -(Fracao a, Fracao b) => a.Subtrair(b);
+    public static Fracao operator -(Fracao a) => new Fracao(-a.numerador, a.denominador);
+    public static Fracao operator *(Fracao a, Fracao b) => a.Multiplicar(b);
+    public static Fracao operator /(Fracao a, Fracao b) => a.Dividir(b);
 
     // metodo para simplificar a fração
 
@@ -89,4 +106,5 @@ public class Fracao
         return $"{numerador}/{denominador}";
     }
 
+}
 }
