@@ -1,0 +1,5 @@
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net8.0/Ideias.GeneratedMSBuildEditorConfig.editorconfig
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net8.0/Ideias.AssemblyInfoInputs.cache
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net8.0/Ideias.AssemblyInfo.cs
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net8.0/Ideias.csproj.CoreCompileInputs.cache
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net8.0/Ideias.sourcelink.json

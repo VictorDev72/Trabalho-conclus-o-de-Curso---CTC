@@ -1,0 +1,15 @@
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.GeneratedMSBuildEditorConfig.editorconfig
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.AssemblyInfoInputs.cache
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.AssemblyInfo.cs
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.csproj.CoreCompileInputs.cache
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.sourcelink.json
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/bin/Debug/net10.0/Ideias
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/bin/Debug/net10.0/Ideias.deps.json
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/bin/Debug/net10.0/Ideias.runtimeconfig.json
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/bin/Debug/net10.0/Ideias.dll
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/bin/Debug/net10.0/Ideias.pdb
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.dll
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/refint/Ideias.dll
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.pdb
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/Ideias.genruntimeconfig.cache
+/Users/u25346/Trabalho-conclus-o-de-Curso---CTC/Ideias/obj/Debug/net10.0/ref/Ideias.dll
