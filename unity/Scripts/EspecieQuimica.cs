@@ -8,13 +8,16 @@ public class EspecieQuimica
     private readonly int CargaA;
     private readonly int CargaB; 
 
-    public EspecieQuimica(Dictionary<int, int> parteA, Dictionary<int, int> parteB)
+    public EspecieQuimica(Dictionary<int, int> parteA, Dictionary<int, int> parteB, int cargaA, int cargaB)
     {
-        if (ParteA == null || ParteB == null)
+        if (parteA == null || parteB == null)
             throw new ArgumentException("Não podem ser nulos");
 
         ParteA = parteA;
         ParteB = parteB;
+
+        CargaA = cargaA;
+        CargaB = cargaB;
         
     }
 
@@ -41,6 +44,29 @@ public class EspecieQuimica
         }
         return res;
     }
+    public int GetCargaTotal()
+    {
+        return CargaA + CargaB;
+    }
+    public int GetCargaA()
+    {
+        return CargaA;
+    }
+    public int GetCargaB()
+    {
+        return CargaB;
+    }
+
+    public Dictionary<int, int> GetParteA()
+    {
+        return new Dictionary<int, int>(ParteA);
+    }
+
+    public Dictionary<int, int> GetParteB()
+    {
+        return new Dictionary<int, int>(ParteB);
+    }
+
     /*
         Dictionary<int,int> reag1, Dictionary<int,int> reag2.        return new Dictionary<int,int>(reag1,reag2);
 
