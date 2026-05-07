@@ -36,6 +36,7 @@ public class UIReacao : MonoBehaviour
         string r1 = dropPart1.options[dropPart1.value].text;
         string r2 = dropPart2.options[dropPart2.value].text;
 
+
         var eq = new EquacaoQuimica();
 
         eq.Reagentes.Add(banco[r1]);
