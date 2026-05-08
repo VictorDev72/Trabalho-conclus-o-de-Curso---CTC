@@ -8,13 +8,17 @@ public class EspecieQuimica
     private readonly int CargaA;
     private readonly int CargaB; 
 
-    public EspecieQuimica(Dictionary<int, int> parteA, Dictionary<int, int> parteB, int cargaA, int cargaB)
+    public EspecieQuimica(Dictionary<int, int> parteA, Dictionary<int, int> parteB, int cargaA, int cargaB = 0)
     {
-        if (parteA == null || parteB == null)
-            throw new ArgumentException("Não podem ser nulos");
+        if (parteA == null)
+            throw new ArgumentException("ParteA não pode ser nula");
+        if(cargaA == 0)
+            throw new ArgumentException("CargaA não pode ser zero");
+        if(cargaB == 0)
+            throw new ArgumentException("CargaB não pode ser zero");
 
         ParteA = parteA;
-        ParteB = parteB;
+        ParteB = parteB ?? new Dictionary<int, int>();
 
         CargaA = cargaA;
         CargaB = cargaB;

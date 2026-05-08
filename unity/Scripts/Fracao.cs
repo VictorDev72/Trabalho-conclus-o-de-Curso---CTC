@@ -98,7 +98,7 @@ namespace Ideias
 
     public Fracao Clonar()
     {
-        return new Fracao(this.denominador, this.numerador);
+        return new Fracao(this.numerador, this.denominador);
     }
 
     public override string ToString()

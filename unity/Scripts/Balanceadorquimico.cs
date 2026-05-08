@@ -165,6 +165,8 @@ namespace Ideias
             BigInteger mmc = 1;
             List<int> resultado = new List<int>();
             List<int> res = new List<int>();
+
+
             foreach (var item in modelo)            {
                 mmc = MMC(mmc, item.Denominator);
             }
@@ -173,24 +175,23 @@ namespace Ideias
             
 
             //cria os resultados absolutos
-            BigInteger mdc = 1;
+            BigInteger mdc = 0;
             foreach (var item in res)            {
                 if (item != 0)
-                    mdc = BigInteger.GreatestCommonDivisor(mdc, BigInteger.Abs(item));
+                    mdc = BigInteger.GreatestCommonDivisor
+                    (
+                        mdc == 0 ? BigInteger.Abs(item) : mdc,
+                        BigInteger.Abs(item)
+                    );
+            }
+            if (mdc == 0) mdc = 1;
 
-            }
-            foreach (var f in modelo)
-                resultado.Add((int)(f.Numerator * (mmc / f.Denominator)) / (int)mdc);
-            for (int i = 0; i < resultado.Count; i++)
-            {
-                resultado[i] /= (int)mdc;
-                if(resultado[i] < 0)
-                {
-                    resultado[i] = -resultado[i];
-                }
-            }
-              
-             return resultado;
+
+            
+            foreach (var r in res)
+                resultado.Add(Math.Abs(r / (int)mdc));
+
+            return resultado;
         }
         private BigInteger MMC(BigInteger x,BigInteger y)
         {
