@@ -1,5 +1,6 @@
 
-
+namespace Balanciador
+{
 public class EspecieQuimica
 {
     private Dictionary<int, int> ParteA { get; set; }
@@ -76,4 +77,5 @@ public class EspecieQuimica
 
 
     */
+}
 }

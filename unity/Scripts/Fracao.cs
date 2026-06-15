@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Ideias
+namespace Balanciador
 {
     public class Fracao
 {

@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace Ideias
+namespace Balanciador
 {
     public class EquacaoQuimica
     {
