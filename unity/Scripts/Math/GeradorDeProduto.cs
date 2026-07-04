@@ -1,3 +1,4 @@
+namespace BalanciadorQuimico{
 public static class GeradorDeProduto
 {
     public static List<Dictionary<int, int>> GerarProduto(String tipoReacao,EspecieQuimica especieA, EspecieQuimica especieB)
@@ -7,8 +8,8 @@ public static class GeradorDeProduto
         switch(tipoReacao)
         {
             case "Combustao":
-                responce.Add(new Dictionary<int, int>() { { 6, 1 }, { 8, 2 } });
-                responce.Add(new Dictionary<int, int>() { { 1, 2 }, { 8, 1 } });
+                responce.Add(new Dictionary<int, int>() { { Atomos.C, 1 }, { Atomos.O, 2 } });
+                responce.Add(new Dictionary<int, int>() { { Atomos.H, 2 }, { Atomos.O, 1 } });
                 break;
             case "Decomposicao":
                 responce.Add(especieA.GetParteA());
@@ -61,11 +62,18 @@ public static class GeradorDeProduto
                 int cargaC_Dt = Math.Abs(especieB.GetCargaA()); 
                 int cargaB_Dt = Math.Abs(especieA.GetCargaB()); 
 
-                
-                int qtdA_noAD = cargaD_Dt; // quantidade de A no produto AD
-                int qtdD_noAD = cargaA_Dt; // quantidade de D no produto AD
-                int qtdC_noCB = cargaB_Dt; // quantidade de C no produto CB
-                int qtdB_noCB = cargaC_Dt; // quantidade de B no produto CB
+                // Calcula o MDC entre a carga de A e D
+                int mdcAD = CalcularMDC(cargaA_Dt, cargaD_Dt); 
+                int qtdA_noAD = cargaD_Dt / mdcAD; 
+                int qtdD_noAD = cargaA_Dt / mdcAD;
+                //int qtdA_noAD = cargaD_Dt; // quantidade de A no produto AD
+                //int qtdD_noAD = cargaA_Dt; // quantidade de D no produto AD
+                // Calcula o MDC entre a carga de A e D
+                int mdcCB = CalcularMDC(cargaC_Dt, cargaB_Dt); 
+                int qtdC_noCB = cargaD_Dt / mdcCB; 
+                int qtdB_noCB = cargaA_Dt / mdcCB;
+                //int qtdC_noCB = cargaB_Dt; // quantidade de C no produto CB
+                //int qtdB_noCB = cargaC_Dt; // quantidade de B no produto CB
                 
                 var ad = MultiplicarDicionario(especieA.GetParteA(), qtdA_noAD);
                 foreach (var par in MultiplicarDicionario(especieB.GetParteB(), qtdD_noAD))
@@ -95,4 +103,5 @@ public static class GeradorDeProduto
             resultado[par.Key] = par.Value * fator;
         return resultado;
     }
+}
 }
