@@ -1,12 +1,18 @@
 ﻿using UnityEngine;
 using TMPro;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Ideias;
+using unity.Scripts;
+using Elementos;
 
 public class UIReacao : MonoBehaviour
 {
     public TMP_Dropdown dropPart1;
     public TMP_Dropdown dropPart2;
+    public TMP_Dropdown dropTipoReacao;
 
     private readonly Dictionary<string, Dictionary<int, int>> banco = new()
     {
@@ -110,31 +116,77 @@ public class UIReacao : MonoBehaviour
         "H2", "O2", "H2O", "CO2", "C"
     };
 
+    private List<string> tiposReacao = new List<string>()
+    {
+        "Sintese", "Decomposicao", "Combustao", "Simples Troca", "Dupla Troca"
+    };
+
+    // Modelo de partes/cargas usado só pelo GeradorDeProduto (cargaB = 0 => espécie simples, sem ParteB)
+    private readonly Dictionary<string, EspecieQuimica> bancoEspecies = new()
+    {
+        { "H2",  new EspecieQuimica(new Dictionary<int, int> { { Atomos.H, 2 } }, null, 1) },
+        { "O2",  new EspecieQuimica(new Dictionary<int, int> { { Atomos.O, 2 } }, null, 2) },
+        { "C",   new EspecieQuimica(new Dictionary<int, int> { { Atomos.C, 1 } }, null, 4) },
+        { "H2O", new EspecieQuimica(new Dictionary<int, int> { { Atomos.H, 2 } }, new Dictionary<int, int> { { Atomos.O, 1 } }, 1, 2) },
+        { "CO2", new EspecieQuimica(new Dictionary<int, int> { { Atomos.C, 1 } }, new Dictionary<int, int> { { Atomos.O, 2 } }, 4, 2) },
+    };
+
+    private static readonly Dictionary<int, string> simbolos = typeof(Atomos)
+        .GetFields(BindingFlags.Public | BindingFlags.Static)
+        .ToDictionary(f => (int)f.GetValue(null), f => f.Name);
+
     void Start()
     {
         dropPart1.ClearOptions();
         dropPart2.ClearOptions();
+        dropTipoReacao.ClearOptions();
 
         dropPart1.AddOptions(opcoes);
         dropPart2.AddOptions(opcoes);
+        dropTipoReacao.AddOptions(tiposReacao);
     }
 
     public void Reagir()
     {
         string r1 = dropPart1.options[dropPart1.value].text;
         string r2 = dropPart2.options[dropPart2.value].text;
+        string tipo = dropTipoReacao.options[dropTipoReacao.value].text;
 
+        if (!bancoEspecies.TryGetValue(r1, out var especieA) || !bancoEspecies.TryGetValue(r2, out var especieB))
+        {
+            Debug.LogError($"Espécie química não cadastrada para '{r1}' ou '{r2}'.");
+            return;
+        }
 
-        var eq = new EquacaoQuimica();
+        try
+        {
+            var produtos = GeradorDeProduto.GerarProduto(tipo, especieA, especieB);
 
-        eq.Reagentes.Add(banco[r1]);
-        eq.Reagentes.Add(banco[r2]);
+            var eq = new EquacaoQuimica();
 
-        //produto fixo
-        eq.Produtos.Add(banco["H2O"]);
+            // Decomposição só consome a primeira espécie (AB -> A + B); a segunda é ignorada.
+            var reagentesFormula = tipo == "Decomposicao" ? new[] { r1 } : new[] { r1, r2 };
+            foreach (var formula in reagentesFormula)
+                eq.Reagentes.Add(banco[formula]);
 
-        var resultado = eq.Balancear();
+            eq.Produtos.AddRange(produtos);
 
-        Debug.Log($"{resultado[0]}{r1} + {resultado[1]}{r2} -> {resultado[2]}H2O");
+            var resultado = eq.Balancear();
+
+            var ladoEsquerdo = string.Join(" + ", reagentesFormula.Select((f, i) => $"{resultado[i]}{f}"));
+            var ladoDireito = string.Join(" + ", produtos.Select((p, i) => $"{resultado[reagentesFormula.Length + i]}{FormatarFormula(p)}"));
+
+            Debug.Log($"{ladoEsquerdo} -> {ladoDireito}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Não foi possível balancear a reação: {ex.Message}");
+        }
+    }
+
+    private static string FormatarFormula(Dictionary<int, int> atomos)
+    {
+        return string.Join("", atomos.OrderBy(a => a.Key)
+            .Select(a => simbolos[a.Key] + (a.Value > 1 ? a.Value.ToString() : "")));
     }
 }

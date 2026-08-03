@@ -1,4 +1,5 @@
-
+using System;
+using System.Collections.Generic;
 
 public class EspecieQuimica
 {
@@ -6,23 +7,22 @@ public class EspecieQuimica
     private Dictionary<int, int> ParteB { get; set; }
 
     private readonly int CargaA;
-    private readonly int CargaB; 
+    private readonly int CargaB;
 
+    // cargaB = 0 representa uma espécie simples, sem ParteB (ex: elementos como O2, Na, Cl2)
     public EspecieQuimica(Dictionary<int, int> parteA, Dictionary<int, int> parteB, int cargaA, int cargaB = 0)
     {
         if (parteA == null)
             throw new ArgumentException("ParteA não pode ser nula");
         if(cargaA == 0)
             throw new ArgumentException("CargaA não pode ser zero");
-        if(cargaB == 0)
-            throw new ArgumentException("CargaB não pode ser zero");
 
         ParteA = parteA;
         ParteB = parteB ?? new Dictionary<int, int>();
 
         CargaA = cargaA;
         CargaB = cargaB;
-        
+
     }
 
     public Dictionary<int,int> ToDictionary()
@@ -70,10 +70,4 @@ public class EspecieQuimica
     {
         return new Dictionary<int, int>(ParteB);
     }
-
-    /*
-        Dictionary<int,int> reag1, Dictionary<int,int> reag2.        return new Dictionary<int,int>(reag1,reag2);
-
-
-    */
 }

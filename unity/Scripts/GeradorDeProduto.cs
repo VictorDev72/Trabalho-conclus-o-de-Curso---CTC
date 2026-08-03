@@ -1,19 +1,35 @@
+using System;
+using System.Collections.Generic;
+using Elementos;
+
 public static class GeradorDeProduto
 {
-    public static List<Dictionary<int, int>> GerarProduto(String tipoReacao,EspecieQuimica especieA, EspecieQuimica especieB)
+    public static List<Dictionary<int, int>> GerarProduto(string tipoReacao, EspecieQuimica especieA, EspecieQuimica especieB)
     {
-        var responce= new List<Dictionary<int, int>>();
+        var responce = new List<Dictionary<int, int>>();
 
-        switch(tipoReacao)
+        switch (tipoReacao)
         {
             case "Combustao":
-                responce.Add(new Dictionary<int, int>() { { 6, 1 }, { 8, 2 } });
-                responce.Add(new Dictionary<int, int>() { { 1, 2 }, { 8, 1 } });
+                var composicaoCombustivel = especieA.ToDictionary();
+                bool temCarbono = composicaoCombustivel.ContainsKey(Atomos.C);
+                bool temHidrogenio = composicaoCombustivel.ContainsKey(Atomos.H);
+
+                if (!temCarbono && !temHidrogenio)
+                    throw new ArgumentException("Combustível deve conter carbono e/ou hidrogênio para gerar CO2/H2O.");
+
+                if (temCarbono)
+                    responce.Add(new Dictionary<int, int>() { { Atomos.C, 1 }, { Atomos.O, 2 } }); // CO2
+                if (temHidrogenio)
+                    responce.Add(new Dictionary<int, int>() { { Atomos.H, 2 }, { Atomos.O, 1 } }); // H2O
                 break;
+
             case "Decomposicao":
                 responce.Add(especieA.GetParteA());
-                responce.Add(especieA.GetParteB());
+                if (especieA.GetCargaB() != 0)
+                    responce.Add(especieA.GetParteB());
                 break;
+
             case "Sintese":
                 var sintese = especieA.ToDictionary();
                 foreach (var par in especieB.ToDictionary())
@@ -25,19 +41,18 @@ public static class GeradorDeProduto
                 }
                 responce.Add(sintese);
                 break;
-            
+
             case "Simples Troca":
                 // AB + C -> AC + B
+                if (especieA.GetCargaB() == 0)
+                    throw new ArgumentException("Simples Troca exige que a primeira espécie seja um composto AB.");
 
                 int cargaA = Math.Abs(especieA.GetCargaA()); //Especie A
                 int cargaB = Math.Abs(especieA.GetCargaB()); //Especie A
                 int cargaC = Math.Abs(especieB.GetCargaA()); //Especie B
 
-                
                 int qtdA_noAC = cargaC; // quantidade de A no produto AC
                 int qtdC_noAC = cargaA; // quantidade de C no produto AC
-
-                
 
                 var ac = MultiplicarDicionario(especieA.GetParteA(), qtdA_noAC);
                 foreach(var par in MultiplicarDicionario(especieB.GetParteA(), qtdC_noAC))
@@ -53,20 +68,22 @@ public static class GeradorDeProduto
                 responce.Add(ac);
                 responce.Add(MultiplicarDicionario(especieA.GetParteB(), qtdB_saindo));
                 break;
+
             case "Dupla Troca":
                 // AB + CD -> AD + CB
+                if (especieA.GetCargaB() == 0 || especieB.GetCargaB() == 0)
+                    throw new ArgumentException("Dupla Troca exige que as duas espécies sejam compostos AB e CD.");
 
-                int cargaA_Dt = Math.Abs(especieA.GetCargaA()); 
-                int cargaD_Dt = Math.Abs(especieB.GetCargaB()); 
-                int cargaC_Dt = Math.Abs(especieB.GetCargaA()); 
-                int cargaB_Dt = Math.Abs(especieA.GetCargaB()); 
+                int cargaA_Dt = Math.Abs(especieA.GetCargaA());
+                int cargaD_Dt = Math.Abs(especieB.GetCargaB());
+                int cargaC_Dt = Math.Abs(especieB.GetCargaA());
+                int cargaB_Dt = Math.Abs(especieA.GetCargaB());
 
-                
                 int qtdA_noAD = cargaD_Dt; // quantidade de A no produto AD
                 int qtdD_noAD = cargaA_Dt; // quantidade de D no produto AD
                 int qtdC_noCB = cargaB_Dt; // quantidade de C no produto CB
                 int qtdB_noCB = cargaC_Dt; // quantidade de B no produto CB
-                
+
                 var ad = MultiplicarDicionario(especieA.GetParteA(), qtdA_noAD);
                 foreach (var par in MultiplicarDicionario(especieB.GetParteB(), qtdD_noAD))
                 {
@@ -74,7 +91,6 @@ public static class GeradorDeProduto
                     else ad[par.Key] = par.Value;
                 }
 
-                
                 var cb = MultiplicarDicionario(especieB.GetParteA(), qtdC_noCB);
                 foreach (var par in MultiplicarDicionario(especieA.GetParteB(), qtdB_noCB))
                 {
@@ -85,6 +101,9 @@ public static class GeradorDeProduto
                 responce.Add(ad);
                 responce.Add(cb);
                 break;
+
+            default:
+                throw new ArgumentException($"Tipo de reação desconhecido: {tipoReacao}");
         }
         return responce;
     }
