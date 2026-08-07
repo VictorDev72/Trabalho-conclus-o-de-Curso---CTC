@@ -28,31 +28,72 @@ public static class GeradorDeProduto
                 break;
             
             case "Simples Troca":
-                // AB + C -> AC + B
-
-                int cargaA = Math.Abs(especieA.GetCargaA()); //Especie A
-                int cargaB = Math.Abs(especieA.GetCargaB()); //Especie A
-                int cargaC = Math.Abs(especieB.GetCargaA()); //Especie B
-
-                
-                int qtdA_noAC = cargaC; // quantidade de A no produto AC
-                int qtdC_noAC = cargaA; // quantidade de C no produto AC
-
-                
-
-                var ac = MultiplicarDicionario(especieA.GetParteA(), qtdA_noAC);
-                foreach(var par in MultiplicarDicionario(especieB.GetParteA(), qtdC_noAC))
+                // 1. Identifica quem é a substância simples (que não tem Parte B) e quem é a composta
+                bool a_eh_simples = (especieA.GetParteB() == null || especieA.GetParteB().Count == 0);
+                EspecieQuimica simples = a_eh_simples ? especieA : especieB;
+                EspecieQuimica composta = a_eh_simples ? especieB : especieA;
+            
+                int cargaSimples = Math.Abs(simples.GetCargaA());
+                int cargaCompA = Math.Abs(composta.GetCargaA());
+                int cargaCompB = Math.Abs(composta.GetCargaB());
+            
+                Dictionary<int, int> novoComposto = new Dictionary<int, int>();
+                Dictionary<int, int> deslocado = new Dictionary<int, int>();
+            
+                // 2. Se a substância simples é POSITIVA (Metal, ex: Zn), substitui a Parte A (H do HCl)
+                if (simples.GetCargaA() > 0) 
                 {
-                    if (ac.ContainsKey(par.Key))
-                        ac[par.Key] += par.Value;
-                    else
-                        ac[par.Key] = par.Value;
+                    // Forma CB: Parte A da Simples + Parte B da Composta (Ex: Zn + Cl)
+                    int mdc = CalcularMDC(cargaSimples, cargaCompB);
+                    int qtdSimples = cargaCompB / mdc;
+                    int qtdCompB = cargaSimples / mdc;
+            
+                    novoComposto = MultiplicarDicionario(simples.GetParteA(), qtdSimples);
+                    foreach (var par in MultiplicarDicionario(composta.GetParteB(), qtdCompB))
+                    {
+                        if (novoComposto.ContainsKey(par.Key)) novoComposto[par.Key] += par.Value;
+                        else novoComposto[par.Key] = par.Value;
+                    }
+            
+                    // O elemento chutado para fora é a Parte A da Composta (O H)
+                    deslocado = MultiplicarDicionario(composta.GetParteA(), 1); 
                 }
-
-                int qtdB_saindo = cargaA * cargaC / cargaB; // quantidade de B saindo da reação
-
-                responce.Add(ac);
-                responce.Add(MultiplicarDicionario(especieA.GetParteB(), qtdB_saindo));
+                // 3. Se a substância simples é NEGATIVA (Ametais como F2), substitui a Parte B
+                else 
+                {
+                    // Forma AC: Parte A da Composta + Parte A da Simples (Ex: Na + F)
+                    int mdc = CalcularMDC(cargaCompA, cargaSimples);
+                    int qtdCompA = cargaSimples / mdc;
+                    int qtdSimples = cargaCompA / mdc;
+            
+                    novoComposto = MultiplicarDicionario(composta.GetParteA(), qtdCompA);
+                    foreach (var par in MultiplicarDicionario(simples.GetParteA(), qtdSimples))
+                    {
+                        if (novoComposto.ContainsKey(par.Key)) novoComposto[par.Key] += par.Value;
+                        else novoComposto[par.Key] = par.Value;
+                    }
+            
+                    // O elemento chutado para fora é a Parte B da Composta
+                    deslocado = MultiplicarDicionario(composta.GetParteB(), 1);
+                }
+            
+                // 4. Regra de Ouro da Química: Elementos que viram gás diatômico sozinhos (H2, N2, O2, F2, Cl2, Br2, I2)
+                int numAtomicoDeslocado = 0;
+                foreach (var chave in deslocado.Keys) { numAtomicoDeslocado = chave; break; } // Pega o ID do elemento
+            
+                if (numAtomicoDeslocado == 1 || numAtomicoDeslocado == 7 || numAtomicoDeslocado == 8 || 
+                    numAtomicoDeslocado == 9 || numAtomicoDeslocado == 17 || numAtomicoDeslocado == 35 || numAtomicoDeslocado == 53)
+                {
+                    deslocado[numAtomicoDeslocado] = 2; // Força a ser uma molécula dupla (Ex: H2)
+                }
+                else 
+                {
+                    deslocado[numAtomicoDeslocado] = 1; // Metais ficam sozinhos (Ex: Fe, Zn)
+                }
+            
+                // 5. Adiciona os produtos na lista final
+                responce.Add(novoComposto);
+                responce.Add(deslocado);
                 break;
             case "Dupla Troca":
                 // AB + CD -> AD + CB
