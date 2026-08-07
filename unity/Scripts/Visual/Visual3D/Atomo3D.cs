@@ -41,7 +41,7 @@ public class Atomo3D : MonoBehaviour
         
         // Pega as propriedades atuais do material, altera a cor e aplica de volta
         _renderer.GetPropertyBlock(_propBlock);
-        _propBlock.SetColor("_Color", corDoAtomo);
+        _propBlock.SetColor("_BaseColor", corDoAtomo);
         _renderer.SetPropertyBlock(_propBlock);
     }
 }
