@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
+using Unity.Mathematics;
 namespace BalanciadorQuimico{
+    
 public static class GeradorDeProduto
 {
     public static List<Dictionary<int, int>> GerarProduto(String tipoReacao,EspecieQuimica especieA, EspecieQuimica especieB)
@@ -137,6 +141,17 @@ public static class GeradorDeProduto
         }
         return responce;
     }
+    private static int CalcularMDC(int cargaA_Dt, int cargaD_Dt)
+    {
+            while (cargaD_Dt != 0)
+            {
+                int temp = cargaD_Dt;
+                cargaD_Dt = cargaA_Dt % cargaD_Dt;
+                cargaA_Dt = temp;
+            }
+            return Math.Abs(cargaA_Dt);
+    }
+    
     private static Dictionary<int, int> MultiplicarDicionario(Dictionary<int, int> dict, int fator)
     {
         var resultado = new Dictionary<int, int>();
