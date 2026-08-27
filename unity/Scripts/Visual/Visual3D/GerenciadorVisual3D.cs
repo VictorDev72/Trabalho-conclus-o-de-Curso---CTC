@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using BalanciadorQuimico; // Para acessar os Elementos e Atomos
 
@@ -7,8 +8,21 @@ public class GerenciadorVisual3D : MonoBehaviour
     [Header("Configurações 3D")]
     public GameObject atomoPrefab; // Arraste o ÚNICO prefab AtomoBase_Prefab aqui
 
+    // Espaço mínimo garantido entre a superfície de dois átomos vizinhos.
+    private const float MargemEntreAtomos = 0.15f;
+
     // Lista para guardar os átomos gerados e poder apagá-los depois
     private List<GameObject> atomosNaTela = new List<GameObject>();
+
+    private void Start()
+    {
+        // Se essa cena foi carregada a partir do botão "Reagir" (ver UIReacao),
+        // os dados da reação já estão esperando aqui — renderiza assim que a cena abre.
+        if (ReacaoTransferData.Reagentes != null && ReacaoTransferData.Produtos != null)
+        {
+            RenderizarReacao(ReacaoTransferData.Reagentes, ReacaoTransferData.Produtos);
+        }
+    }
 
     /// <summary>
     /// Função principal que a sua UI vai chamar quando a reação terminar de ser calculada
@@ -37,24 +51,38 @@ public class GerenciadorVisual3D : MonoBehaviour
 
     private void RenderizarMolecula(Dictionary<int, int> molecula, ref Vector3 posicaoBase)
     {
-        // Lê os átomos dentro da molécula (Ex: H: 2, O: 1)
+        // Expande o dicionário (número atômico -> quantidade) numa lista de átomos individuais
+        var atomosDaMolecula = new List<ElementoInfo>();
         foreach (var par in molecula)
         {
-            int numeroAtomico = par.Key;
-            int quantidade = par.Value;
+            ElementoInfo info = Elemento.TabelaPeriodica[par.Key];
+            for (int i = 0; i < par.Value; i++)
+                atomosDaMolecula.Add(info);
+        }
 
-            for (int i = 0; i < quantidade; i++)
-            {
-                // Calcula uma posição um pouco aleatória em volta da posição base
-                // (No futuro você pode melhorar isso para posições geométricas precisas)
-                Vector3 posicaoAtomo = posicaoBase + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0);
-                
-                // Chama a função genérica para criar o átomo!
-                GameObject novoAtomo = CriarAtomo(numeroAtomico, posicaoAtomo);
-                
-                // Guarda na lista para podermos apagar depois
-                atomosNaTela.Add(novoAtomo);
-            }
+        int total = atomosDaMolecula.Count;
+        if (total == 0) return;
+
+        if (total == 1)
+        {
+            atomosNaTela.Add(CriarAtomo(atomosDaMolecula[0].Z, posicaoBase));
+            return;
+        }
+
+        // Distribui os átomos num círculo ao redor de posicaoBase. O raio do círculo é
+        // calculado a partir do maior átomo da molécula para garantir que a distância entre
+        // dois centros vizinhos seja sempre >= à soma dos seus raios (+ margem) — isso é o que
+        // impede as esferas de ficarem uma dentro da outra, diferente do jitter aleatório antigo.
+        float maiorDiametro = atomosDaMolecula.Max(Atomo3D.CalcularEscala);
+        float raioOrbita = (maiorDiametro + MargemEntreAtomos) / (2f * Mathf.Sin(Mathf.PI / total));
+
+        for (int i = 0; i < total; i++)
+        {
+            float angulo = (2f * Mathf.PI / total) * i;
+            Vector3 offset = new Vector3(Mathf.Cos(angulo), Mathf.Sin(angulo), 0f) * raioOrbita;
+
+            GameObject novoAtomo = CriarAtomo(atomosDaMolecula[i].Z, posicaoBase + offset);
+            atomosNaTela.Add(novoAtomo);
         }
     }
 

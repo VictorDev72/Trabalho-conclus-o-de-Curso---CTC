@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections.Generic;
 using BalanciadorQuimico;
@@ -350,6 +351,11 @@ public class UIReacao : MonoBehaviour
                     parteProdutos += " + ";
             }
             Debug.Log($"[UIReacao] Equação balanceada: {parteReagentes}  →  {parteProdutos}");
+
+            // Entrega os dados já balanceados para a cena de visualização 3D e abre ela.
+            ReacaoTransferData.Reagentes = eq.Reagentes;
+            ReacaoTransferData.Produtos = produtos;
+            SceneManager.LoadScene(ReacaoTransferData.NomeCena);
         }
         catch (InvalidOperationException ex)
         {
