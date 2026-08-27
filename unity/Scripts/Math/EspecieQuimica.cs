@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+namespace BalanciadorQuimico
+{
 public class EspecieQuimica
 {
     private Dictionary<int, int> ParteA { get; set; }
@@ -27,7 +29,7 @@ public class EspecieQuimica
 
     public Dictionary<int,int> ToDictionary()
     {
-     
+
         var res = new Dictionary<int, int>();
 
         foreach (var x in ParteA)
@@ -70,4 +72,5 @@ public class EspecieQuimica
     {
         return new Dictionary<int, int>(ParteB);
     }
+}
 }
