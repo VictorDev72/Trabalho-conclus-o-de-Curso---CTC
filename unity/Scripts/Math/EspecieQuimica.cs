@@ -1,5 +1,5 @@
 
-namespace Balanciador
+namespace BalanciadorQuimico
 {
 public class EspecieQuimica
 {

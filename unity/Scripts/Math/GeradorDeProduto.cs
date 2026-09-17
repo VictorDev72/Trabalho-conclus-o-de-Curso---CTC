@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using Unity.Mathematics;
+namespace BalanciadorQuimico{
+    
 public static class GeradorDeProduto
 {
     public static List<Dictionary<int, int>> GerarProduto(String tipoReacao,EspecieQuimica especieA, EspecieQuimica especieB)
@@ -6,21 +11,10 @@ public static class GeradorDeProduto
 
         switch(tipoReacao)
         {
-            case "Combustao": // Completa
-                responce.Add(new Dictionary<int, int>() { { Atomos.C, 1 }, { Atomos.O, 2 } }); // CO2
-                responce.Add(new Dictionary<int, int>() { { Atomos.H, 2 }, { Atomos.O, 1 } }); // H2O
+            case "Combustao":
+                responce.Add(new Dictionary<int, int>() { { Atomos.C, 1 }, { Atomos.O, 2 } });
+                responce.Add(new Dictionary<int, int>() { { Atomos.H, 2 }, { Atomos.O, 1 } });
                 break;
-
-            case "Combustao_Incompleta_CO":
-                responce.Add(new Dictionary<int, int>() { { Atomos.C, 1 }, { Atomos.O, 1 } }); // CO
-                responce.Add(new Dictionary<int, int>() { { Atomos.H, 2 }, { Atomos.O, 1 } }); // H2O
-                break;
-
-            case "Combustao_Incompleta_C":
-                responce.Add(new Dictionary<int, int>() { { Atomos.C, 1 } });                  // C (Fuligem)
-                responce.Add(new Dictionary<int, int>() { { Atomos.H, 2 }, { Atomos.O, 1 } }); // H2O
-                break;
-                
             case "Decomposicao":
                 responce.Add(especieA.GetParteA());
                 responce.Add(especieA.GetParteB());
@@ -42,14 +36,14 @@ public static class GeradorDeProduto
                 bool a_eh_simples = (especieA.GetParteB() == null || especieA.GetParteB().Count == 0);
                 EspecieQuimica simples = a_eh_simples ? especieA : especieB;
                 EspecieQuimica composta = a_eh_simples ? especieB : especieA;
-
+            
                 int cargaSimples = Math.Abs(simples.GetCargaA());
                 int cargaCompA = Math.Abs(composta.GetCargaA());
                 int cargaCompB = Math.Abs(composta.GetCargaB());
-
+            
                 Dictionary<int, int> novoComposto = new Dictionary<int, int>();
                 Dictionary<int, int> deslocado = new Dictionary<int, int>();
-
+            
                 // 2. Se a substância simples é POSITIVA (Metal, ex: Zn), substitui a Parte A (H do HCl)
                 if (simples.GetCargaA() > 0) 
                 {
@@ -57,14 +51,14 @@ public static class GeradorDeProduto
                     int mdc = CalcularMDC(cargaSimples, cargaCompB);
                     int qtdSimples = cargaCompB / mdc;
                     int qtdCompB = cargaSimples / mdc;
-
+            
                     novoComposto = MultiplicarDicionario(simples.GetParteA(), qtdSimples);
                     foreach (var par in MultiplicarDicionario(composta.GetParteB(), qtdCompB))
                     {
                         if (novoComposto.ContainsKey(par.Key)) novoComposto[par.Key] += par.Value;
                         else novoComposto[par.Key] = par.Value;
                     }
-
+            
                     // O elemento chutado para fora é a Parte A da Composta (O H)
                     deslocado = MultiplicarDicionario(composta.GetParteA(), 1); 
                 }
@@ -75,22 +69,22 @@ public static class GeradorDeProduto
                     int mdc = CalcularMDC(cargaCompA, cargaSimples);
                     int qtdCompA = cargaSimples / mdc;
                     int qtdSimples = cargaCompA / mdc;
-
+            
                     novoComposto = MultiplicarDicionario(composta.GetParteA(), qtdCompA);
                     foreach (var par in MultiplicarDicionario(simples.GetParteA(), qtdSimples))
                     {
                         if (novoComposto.ContainsKey(par.Key)) novoComposto[par.Key] += par.Value;
                         else novoComposto[par.Key] = par.Value;
                     }
-
+            
                     // O elemento chutado para fora é a Parte B da Composta
                     deslocado = MultiplicarDicionario(composta.GetParteB(), 1);
                 }
-
+            
                 // 4. Regra de Ouro da Química: Elementos que viram gás diatômico sozinhos (H2, N2, O2, F2, Cl2, Br2, I2)
                 int numAtomicoDeslocado = 0;
                 foreach (var chave in deslocado.Keys) { numAtomicoDeslocado = chave; break; } // Pega o ID do elemento
-
+            
                 if (numAtomicoDeslocado == 1 || numAtomicoDeslocado == 7 || numAtomicoDeslocado == 8 || 
                     numAtomicoDeslocado == 9 || numAtomicoDeslocado == 17 || numAtomicoDeslocado == 35 || numAtomicoDeslocado == 53)
                 {
@@ -100,7 +94,7 @@ public static class GeradorDeProduto
                 {
                     deslocado[numAtomicoDeslocado] = 1; // Metais ficam sozinhos (Ex: Fe, Zn)
                 }
-
+            
                 // 5. Adiciona os produtos na lista final
                 responce.Add(novoComposto);
                 responce.Add(deslocado);
@@ -113,11 +107,18 @@ public static class GeradorDeProduto
                 int cargaC_Dt = Math.Abs(especieB.GetCargaA()); 
                 int cargaB_Dt = Math.Abs(especieA.GetCargaB()); 
 
-                
-                int qtdA_noAD = cargaD_Dt; // quantidade de A no produto AD
-                int qtdD_noAD = cargaA_Dt; // quantidade de D no produto AD
-                int qtdC_noCB = cargaB_Dt; // quantidade de C no produto CB
-                int qtdB_noCB = cargaC_Dt; // quantidade de B no produto CB
+                // Calcula o MDC entre a carga de A e D
+                int mdcAD = CalcularMDC(cargaA_Dt, cargaD_Dt); 
+                int qtdA_noAD = cargaD_Dt / mdcAD; 
+                int qtdD_noAD = cargaA_Dt / mdcAD;
+                //int qtdA_noAD = cargaD_Dt; // quantidade de A no produto AD
+                //int qtdD_noAD = cargaA_Dt; // quantidade de D no produto AD
+                // Calcula o MDC entre a carga de A e D
+                int mdcCB = CalcularMDC(cargaC_Dt, cargaB_Dt); 
+                int qtdC_noCB = cargaD_Dt / mdcCB; 
+                int qtdB_noCB = cargaA_Dt / mdcCB;
+                //int qtdC_noCB = cargaB_Dt; // quantidade de C no produto CB
+                //int qtdB_noCB = cargaC_Dt; // quantidade de B no produto CB
                 
                 var ad = MultiplicarDicionario(especieA.GetParteA(), qtdA_noAD);
                 foreach (var par in MultiplicarDicionario(especieB.GetParteB(), qtdD_noAD))
@@ -140,6 +141,17 @@ public static class GeradorDeProduto
         }
         return responce;
     }
+    private static int CalcularMDC(int cargaA_Dt, int cargaD_Dt)
+    {
+            while (cargaD_Dt != 0)
+            {
+                int temp = cargaD_Dt;
+                cargaD_Dt = cargaA_Dt % cargaD_Dt;
+                cargaA_Dt = temp;
+            }
+            return Math.Abs(cargaA_Dt);
+    }
+    
     private static Dictionary<int, int> MultiplicarDicionario(Dictionary<int, int> dict, int fator)
     {
         var resultado = new Dictionary<int, int>();
@@ -147,4 +159,5 @@ public static class GeradorDeProduto
             resultado[par.Key] = par.Value * fator;
         return resultado;
     }
+}
 }
