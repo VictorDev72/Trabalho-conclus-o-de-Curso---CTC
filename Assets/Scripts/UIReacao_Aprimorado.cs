@@ -334,6 +334,7 @@ public class UIReacao : MonoBehaviour
 
             ReacaoTransferData.Reagentes = eq.Reagentes;
             ReacaoTransferData.Produtos = produtos;
+            ReacaoTransferData.Equacao = equacao;
             SceneManager.LoadScene(ReacaoTransferData.NomeCena);
         }
         catch (InvalidOperationException ex)

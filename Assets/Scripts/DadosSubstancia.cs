@@ -53,5 +53,6 @@ public static class ReacaoTransferData
 {
     public static List<Dictionary<int, int>> Reagentes = new List<Dictionary<int, int>>();
     public static List<Dictionary<int, int>> Produtos = new List<Dictionary<int, int>>();
+    public static string Equacao = "";   // texto da equação balanceada, exibido no título da cena 3D
     public static string NomeCena = "Reacao3D";
 }
