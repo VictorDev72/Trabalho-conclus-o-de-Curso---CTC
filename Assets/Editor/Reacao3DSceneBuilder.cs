@@ -56,7 +56,7 @@ public static class Reacao3DSceneBuilder
         // Câmera
         GameObject camGO = ObjectFactory.CreateGameObject("Main Camera", typeof(Camera));
         camGO.tag = "MainCamera";
-        camGO.transform.position = new Vector3(4f, 6f, -20f);
+        camGO.transform.position = new Vector3(0f, 6f, -20f);
         camGO.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
         var cam = camGO.GetComponent<Camera>();
         cam.fieldOfView = 55f;

@@ -1,168 +1,413 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using BalanciadorQuimico; // Para acessar os Elementos e Atomos
+using BalanciadorQuimico;
 
 public class GerenciadorVisual3D : MonoBehaviour
 {
     [Header("Configurações 3D")]
-    public GameObject atomoPrefab; // Arraste o ÚNICO prefab AtomoBase_Prefab aqui
-    public float distanciaEntreMoleculas = 4f;
+    public GameObject atomoPrefab;
 
-    [Header("Ligações (cilindros)")]
-    public float comprimentoLigacao = 1.6f;
+    // Espaço livre entre uma molécula e a próxima.
+    public float distanciaEntreMoleculas = 2f;
+
+    // Metade do espaço vazio entre reagentes (esquerda)
+    // e produtos (direita), em torno de X = 0.
+    public float espacoCentral = 3f;
+
+    [Header("Configurações das ligações")]
     public float espessuraLigacao = 0.12f;
-    public Color corLigacao = new Color(0.75f, 0.75f, 0.75f);
 
-    // Lista para guardar os átomos/ligações gerados e poder apagá-los depois
-    private List<GameObject> atomosNaTela = new List<GameObject>();
+    public Color corLigacao =
+        new Color(0.75f, 0.75f, 0.75f);
+
+    // Opcional: se vazio, usa o material padrão
+    // do cilindro pintado com corLigacao.
+    public Material materialLigacao;
+
+    // Cada molécula fica num GameObject "grupo";
+    // destruir o grupo destrói átomos e ligações.
+    private List<GameObject> objetosNaTela =
+        new List<GameObject>();
 
     private void Start()
     {
-        // Ao carregar esta cena, renderiza automaticamente a reação balanceada
+        // Ao carregar esta cena, renderiza a reação balanceada
         // que a UIReacao deixou pronta em ReacaoTransferData.
-        RenderizarReacao(ReacaoTransferData.Reagentes, ReacaoTransferData.Produtos);
+        RenderizarReacao(
+            ReacaoTransferData.Reagentes,
+            ReacaoTransferData.Produtos);
     }
 
-    /// <summary>
-    /// Função principal que a sua UI vai chamar quando a reação terminar de ser calculada
-    /// </summary>
-    public void RenderizarReacao(List<Dictionary<int, int>> reagentes, List<Dictionary<int, int>> produtos)
+    // ============================================================
+    // REAÇÃO
+    // ============================================================
+
+    public void RenderizarReacao(
+        List<Dictionary<int, int>> reagentes,
+        List<Dictionary<int, int>> produtos)
     {
-        // 1. Limpa a tela de reações anteriores
         LimparTela();
 
-        // 2. Renderiza os Reagentes (vamos colocá-los mais à esquerda da tela, X = -5)
-        Vector3 posicaoAtual = new Vector3(-5, 0, 0);
-        foreach (var molecula in reagentes)
+        if (atomoPrefab == null)
         {
-            RenderizarMolecula(molecula, ref posicaoAtual);
-            posicaoAtual.x += distanciaEntreMoleculas;
-        }
-
-        // 3. Renderiza os Produtos (vamos colocá-los mais à direita da tela, X = 5)
-        posicaoAtual = new Vector3(5, 0, 0);
-        foreach (var molecula in produtos)
-        {
-            RenderizarMolecula(molecula, ref posicaoAtual);
-            posicaoAtual.x += distanciaEntreMoleculas;
-        }
-    }
-
-    /// <summary>
-    /// Renderiza uma molécula como um pequeno "ball and stick": um átomo central
-    /// (o de menor quantidade na fórmula) com os demais distribuídos ao redor
-    /// e ligados a ele por cilindros finos.
-    /// </summary>
-    private void RenderizarMolecula(Dictionary<int, int> molecula, ref Vector3 posicaoBase)
-    {
-        // Expande o dicionário {numeroAtomico: quantidade} numa lista plana de átomos
-        List<int> atomos = new List<int>();
-        foreach (var par in molecula)
-            for (int i = 0; i < par.Value; i++)
-                atomos.Add(par.Key);
-
-        if (atomos.Count == 0) return;
-
-        if (atomos.Count == 1)
-        {
-            atomosNaTela.Add(CriarAtomo(atomos[0], posicaoBase));
+            Debug.LogError(
+                "[GerenciadorVisual3D] atomoPrefab não foi " +
+                "atribuído no Inspector.");
             return;
         }
 
-        if (atomos.Count == 2)
-        {
-            Vector3 offset = new Vector3(comprimentoLigacao / 2f, 0, 0);
-            Vector3 posA = posicaoBase - offset;
-            Vector3 posB = posicaoBase + offset;
+        List<MoleculaNaTela> moleculasReagentes =
+            CriarMoleculas(reagentes);
 
-            atomosNaTela.Add(CriarAtomo(atomos[0], posA));
-            atomosNaTela.Add(CriarAtomo(atomos[1], posB));
-            atomosNaTela.Add(CriarLigacao(posA, posB));
-            return;
+        List<MoleculaNaTela> moleculasProdutos =
+            CriarMoleculas(produtos);
+
+        // Reagentes terminam em -espacoCentral,
+        // produtos começam em +espacoCentral.
+        float larguraReagentes =
+            LarguraTotal(moleculasReagentes);
+
+        PosicionarEmFila(
+            moleculasReagentes,
+            -espacoCentral - larguraReagentes);
+
+        PosicionarEmFila(
+            moleculasProdutos,
+            espacoCentral);
+    }
+
+    // ============================================================
+    // LAYOUT
+    // ============================================================
+
+    // Molécula já montada (na origem) e seus limites em X,
+    // usados para enfileirar sem que uma invada a outra.
+    private struct MoleculaNaTela
+    {
+        public GameObject Grupo;
+        public float MinX;
+        public float MaxX;
+
+        public float Largura => MaxX - MinX;
+    }
+
+    private List<MoleculaNaTela> CriarMoleculas(
+        List<Dictionary<int, int>> composicoes)
+    {
+        List<MoleculaNaTela> moleculas =
+            new List<MoleculaNaTela>();
+
+        if (composicoes == null)
+            return moleculas;
+
+        foreach (
+            Dictionary<int, int> composicao
+            in composicoes)
+        {
+            try
+            {
+                moleculas.Add(
+                    RenderizarMolecula(
+                        composicao));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(
+                    "[GerenciadorVisual3D] Não foi possível " +
+                    "montar a molécula: " + ex.Message);
+            }
         }
 
-        // 3+ átomos: o átomo com menor quantidade na fórmula vira o centro
-        // (ex.: H2O -> O central; CO2 -> C central; NH3 -> N central).
-        int atomoCentral = molecula.OrderBy(par => par.Value).First().Key;
-        atomos.Remove(atomoCentral);
+        return moleculas;
+    }
 
-        atomosNaTela.Add(CriarAtomo(atomoCentral, posicaoBase));
+    private float LarguraTotal(
+        List<MoleculaNaTela> moleculas)
+    {
+        if (moleculas.Count == 0)
+            return 0f;
 
-        for (int i = 0; i < atomos.Count; i++)
+        float total = 0f;
+
+        foreach (MoleculaNaTela molecula in moleculas)
+            total += molecula.Largura;
+
+        return total +
+               distanciaEntreMoleculas *
+               (moleculas.Count - 1);
+    }
+
+    private void PosicionarEmFila(
+        List<MoleculaNaTela> moleculas,
+        float inicioX)
+    {
+        float cursor = inicioX;
+
+        foreach (MoleculaNaTela molecula in moleculas)
         {
-            Vector3 direcao = PontoNaEsfera(i, atomos.Count);
-            Vector3 posSatelite = posicaoBase + direcao * comprimentoLigacao;
+            // Encosta a borda esquerda da molécula no cursor.
+            molecula.Grupo.transform.position =
+                new Vector3(
+                    cursor - molecula.MinX,
+                    0,
+                    0);
 
-            atomosNaTela.Add(CriarAtomo(atomos[i], posSatelite));
-            atomosNaTela.Add(CriarLigacao(posicaoBase, posSatelite));
+            cursor +=
+                molecula.Largura +
+                distanciaEntreMoleculas;
         }
     }
 
-    /// <summary>
-    /// Distribui N pontos de forma razoavelmente uniforme sobre uma esfera unitária
-    /// (espiral de Fibonacci), usado para posicionar os átomos ao redor do centro.
-    /// </summary>
-    private Vector3 PontoNaEsfera(int indice, int total)
+    // ============================================================
+    // MOLÉCULA
+    // ============================================================
+
+    private MoleculaNaTela RenderizarMolecula(
+        Dictionary<int, int> composicao)
     {
-        if (total == 1) return Vector3.up;
+        EstruturaMolecular estrutura =
+            GeometriaMolecular.Criar(
+                composicao);
 
-        float offset = 2f / total;
-        float y = (indice * offset - 1f) + (offset / 2f);
-        float raio = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
-        float anguloOuro = indice * Mathf.PI * (3f - Mathf.Sqrt(5f));
+        GameObject grupo =
+            new GameObject(
+                "Molecula_" +
+                Formula(composicao));
 
-        float x = Mathf.Cos(anguloOuro) * raio;
-        float z = Mathf.Sin(anguloOuro) * raio;
-        return new Vector3(x, y, z);
+        objetosNaTela.Add(grupo);
+
+        Dictionary<int, GameObject>
+            objetosAtomos =
+            new Dictionary<int, GameObject>();
+
+        float minX = float.MaxValue;
+        float maxX = float.MinValue;
+
+        // --------------------------------------------------------
+        // ÁTOMOS
+        // --------------------------------------------------------
+
+        foreach (
+            AtomoMolecular atomo
+            in estrutura.Atomos)
+        {
+            GameObject objeto =
+                CriarAtomo(
+                    atomo.Info,
+                    atomo.Posicao,
+                    grupo.transform);
+
+            objetosAtomos.Add(
+                atomo.Id,
+                objeto);
+
+            // A escala da esfera é o diâmetro.
+            float raio =
+                objeto.transform.localScale.x / 2f;
+
+            minX = Mathf.Min(minX, atomo.Posicao.x - raio);
+            maxX = Mathf.Max(maxX, atomo.Posicao.x + raio);
+        }
+
+        // --------------------------------------------------------
+        // LIGAÇÕES
+        // --------------------------------------------------------
+
+        foreach (
+            LigacaoMolecular ligacao
+            in estrutura.Ligacoes)
+        {
+            GameObject objetoA =
+                objetosAtomos[
+                    ligacao.A.Id];
+
+            GameObject objetoB =
+                objetosAtomos[
+                    ligacao.B.Id];
+
+            CriarLigacao(
+                objetoA.transform.localPosition,
+                objetoB.transform.localPosition,
+                ligacao.Ordem,
+                grupo.transform);
+        }
+
+        return new MoleculaNaTela
+        {
+            Grupo = grupo,
+            MinX = minX,
+            MaxX = maxX
+        };
     }
 
-    // A FUNÇÃO QUE VOCÊ PERGUNTOU FICA AQUI!
-    private GameObject CriarAtomo(int numeroAtomico, Vector3 posicaoNaTela)
+    private static string Formula(
+        Dictionary<int, int> composicao)
     {
-        // Pega as informações do elemento solicitado
-        ElementoInfo info = Elementos.Tabela[numeroAtomico];
+        string texto = "";
 
-        // Instancia a esfera genérica
-        GameObject novoAtomo = Instantiate(atomoPrefab, posicaoNaTela, Quaternion.identity);
+        foreach (KeyValuePair<int, int> item in composicao)
+        {
+            texto +=
+                Elementos.Tabela.TryGetValue(
+                    item.Key,
+                    out ElementoInfo info)
+                    ? info.Simbolo
+                    : "E" + item.Key;
 
-        // Passa os dados matemáticos/químicos para o visual
-        novoAtomo.GetComponent<Atomo3D>().Inicializar(info);
+            if (item.Value > 1)
+                texto += item.Value;
+        }
+
+        return texto;
+    }
+
+    // ============================================================
+    // ÁTOMO
+    // ============================================================
+
+    private GameObject CriarAtomo(
+        ElementoInfo info,
+        Vector3 posicaoLocal,
+        Transform pai)
+    {
+        GameObject novoAtomo =
+            Instantiate(
+                atomoPrefab,
+                pai);
+
+        novoAtomo.name =
+            info.Simbolo;
+
+        novoAtomo.transform.localPosition =
+            posicaoLocal;
+
+        Atomo3D atomo =
+            novoAtomo.GetComponent<Atomo3D>();
+
+        if (atomo == null)
+        {
+            Debug.LogError(
+                "AtomoBase_Prefab não possui " +
+                "o componente Atomo3D.");
+        }
+        else
+        {
+            atomo.Inicializar(info);
+        }
 
         return novoAtomo;
     }
 
-    /// <summary>
-    /// Cria um cilindro fino conectando dois pontos, representando a ligação química.
-    /// </summary>
-    private GameObject CriarLigacao(Vector3 pontoA, Vector3 pontoB)
+    // ============================================================
+    // LIGAÇÃO
+    // ============================================================
+
+    // Cria "ordem" cilindros lado a lado entre inicio e fim
+    // (1 = simples, 2 = dupla, 3 = tripla), em coordenadas
+    // locais do grupo da molécula.
+    private void CriarLigacao(
+        Vector3 inicio,
+        Vector3 fim,
+        int ordem,
+        Transform pai)
     {
-        GameObject ligacao = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        ligacao.name = "Ligacao";
+        Vector3 direcao =
+            fim - inicio;
 
-        var colisor = ligacao.GetComponent<Collider>();
-        if (colisor != null) Destroy(colisor);
+        float distancia =
+            direcao.magnitude;
 
-        Vector3 direcao = pontoB - pontoA;
-        float distancia = direcao.magnitude;
+        if (distancia <= 0.001f)
+            return;
 
-        ligacao.transform.position = (pontoA + pontoB) / 2f;
-        ligacao.transform.up = direcao.normalized;
-        // Cilindro padrão do Unity tem 2 unidades de altura -> metade da distância no eixo Y
-        ligacao.transform.localScale = new Vector3(espessuraLigacao, distancia / 2f, espessuraLigacao);
+        Vector3 meio =
+            (inicio + fim) / 2f;
 
-        var renderer = ligacao.GetComponent<Renderer>();
-        renderer.material.color = corLigacao;
+        Vector3 deslocamento =
+            Vector3.Cross(
+                direcao.normalized,
+                Vector3.up);
 
-        return ligacao;
+        if (deslocamento.sqrMagnitude < 0.01f)
+        {
+            deslocamento =
+                Vector3.Cross(
+                    direcao.normalized,
+                    Vector3.forward);
+        }
+
+        deslocamento.Normalize();
+
+        float espacamento =
+            0.18f;
+
+        float centro =
+            (ordem - 1) / 2f;
+
+        for (int i = 0;
+             i < ordem;
+             i++)
+        {
+            GameObject cilindro =
+                GameObject.CreatePrimitive(
+                    PrimitiveType.Cylinder);
+
+            cilindro.name =
+                "Ligacao";
+
+            Collider collider =
+                cilindro.GetComponent<Collider>();
+
+            if (collider != null)
+                Destroy(collider);
+
+            cilindro.transform.SetParent(
+                pai,
+                false);
+
+            cilindro.transform.localPosition =
+                meio +
+                deslocamento *
+                ((i - centro) *
+                 espacamento);
+
+            cilindro.transform.up =
+                pai.rotation *
+                direcao.normalized;
+
+            // O cilindro padrão do Unity tem 2 unidades
+            // de altura, por isso distancia / 2.
+            cilindro.transform.localScale =
+                new Vector3(
+                    espessuraLigacao,
+                    distancia / 2f,
+                    espessuraLigacao);
+
+            Renderer renderer =
+                cilindro.GetComponent<Renderer>();
+
+            if (materialLigacao != null)
+                renderer.material = materialLigacao;
+            else
+                renderer.material.color = corLigacao;
+        }
     }
+
+    // ============================================================
+    // LIMPAR
+    // ============================================================
 
     private void LimparTela()
     {
-        foreach (var atomo in atomosNaTela)
+        foreach (
+            GameObject objeto
+            in objetosNaTela)
         {
-            Destroy(atomo); // (No futuro, trocaríamos isso por Object Pooling)
+            if (objeto != null)
+                Destroy(objeto);
         }
-        atomosNaTela.Clear();
+
+        objetosNaTela.Clear();
     }
 }

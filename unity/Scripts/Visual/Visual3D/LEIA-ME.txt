@@ -1,0 +1,24 @@
+REACTIFY — atualização da geometria molecular
+
+Arquivos:
+- AtomoMolecular.cs
+- LigacaoMolecular.cs
+- EstruturaMolecular.cs
+- GeometriaMolecular.cs
+- Atomo3D.cs (compatibilidade com ElementoInfo.Z da tabela fornecida)
+- GerenciadorVisual3D.cs (renderiza átomos e ligações)
+
+Instalação:
+1. Faça backup dos arquivos atuais.
+2. Copie os seis .cs para a pasta de scripts do Unity.
+3. Garanta que Elemento.cs e TabelaCPK.cs estejam no projeto.
+4. No Inspector, atribua o prefab AtomoBase_Prefab ao campo atomoPrefab do GerenciadorVisual3D.
+5. O prefab precisa ter uma esfera com Renderer e o script Atomo3D. Um Collider é criado automaticamente.
+6. A UI continua chamando RenderizarReacao(reagentes, produtos), com cada molécula representada por Dictionary<int,int>.
+
+Notas químicas:
+- A tabela global é consultada via Elementos.Tabela e Atomos; não há números atômicos de elementos espalhados no código.
+- A geometria é uma aproximação determinística e canônica para moléculas covalentes pequenas, não um cálculo de química quântica.
+- A fórmula molecular não define sempre conectividade/isomeria. Sais, metais de transição, radicais, ressonância e íons complexos exigem regras adicionais.
+- A carga pode ser informada em RenderizarMolecula(composicao, posicao, cargaTotal), mas o algoritmo atual ainda não distribui formalmente essa carga por cada átomo. Para RenderizarReacao, a carga padrão é zero.
+- A estrutura busca posicionar cada átomo apenas uma vez para evitar que os centros sejam deslocados repetidamente.
