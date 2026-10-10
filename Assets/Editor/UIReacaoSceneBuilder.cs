@@ -51,7 +51,7 @@ public static class UIReacaoSceneBuilder
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        if (Object.FindFirstObjectByType<EventSystem>() == null)
+        if (Object.FindAnyObjectByType<EventSystem>() == null)
         {
             GameObject es = new GameObject("EventSystem");
             es.AddComponent<EventSystem>();
@@ -81,6 +81,10 @@ public static class UIReacaoSceneBuilder
 
         CreateText("Titulo", painel.transform, resources, "Simulador de Reações Químicas", 30, FontStyles.Bold, TextAlignmentOptions.Center, 44);
 
+        // O tipo vem primeiro: os reagentes são filtrados pelo tipo escolhido.
+        CreateText("LabelTipo", painel.transform, resources, "Tipo de Reação", 16, FontStyles.Normal, TextAlignmentOptions.Left, 26);
+        TMP_Dropdown dropTipo = CreateDropdown("DropdownTipo", painel.transform, resources);
+
         CreateText("LabelReagente1", painel.transform, resources, "Reagente 1", 16, FontStyles.Normal, TextAlignmentOptions.Left, 26);
         TMP_Dropdown dropReagente1 = CreateDropdown("DropdownReagente1", painel.transform, resources);
 
@@ -88,9 +92,6 @@ public static class UIReacaoSceneBuilder
 
         CreateText("LabelReagente2", painel.transform, resources, "Reagente 2", 16, FontStyles.Normal, TextAlignmentOptions.Left, 26);
         TMP_Dropdown dropReagente2 = CreateDropdown("DropdownReagente2", painel.transform, resources);
-
-        CreateText("LabelTipo", painel.transform, resources, "Tipo de Reação", 16, FontStyles.Normal, TextAlignmentOptions.Left, 26);
-        TMP_Dropdown dropTipo = CreateDropdown("DropdownTipo", painel.transform, resources);
 
         // Preview
         GameObject previewPanel = CreateUIObject("PreviewPanel", painel.transform);

@@ -1,71 +1,177 @@
 using System.Collections.Generic;
+using System.Linq;
 using BalanciadorQuimico;
 
+// Regras químicas usadas pelo GeradorDeProduto. Trabalha com os íons de cada
+// substância (DadosSubstancia), nunca com o texto do nome.
 public static class ValidadorQuimico
 {
-    // Fila de Reatividade dos Cátions (Metais + Hidrogênio) - Do Mais Reativo pro Menos Reativo
-    private static readonly List<int> ReatividadeCations = new List<int>
+    // Fila de reatividade dos metais (+ H), do mais reativo para o menos reativo.
+    private static readonly List<int> ReatividadeMetais = new List<int>
     {
-        Atomos.K, Atomos.Na, Atomos.Ca, Atomos.Mg, Atomos.Al, // Metais Alcalinos / Alcalino-Terrosos
-        Atomos.Zn, Atomos.Fe,                                 // Metais Comuns
-        Atomos.H,                                             // HIDROGÊNIO (Ponto de corte)
-        Atomos.Cu, Atomos.Ag, Atomos.Au                       // Metais Nobres (Inertes frente ao H)
+        Atomos.K, Atomos.Ba, Atomos.Ca, Atomos.Na, Atomos.Mg, Atomos.Al,
+        Atomos.Zn, Atomos.Fe, Atomos.Pb,
+        Atomos.H,
+        Atomos.Cu, Atomos.Hg, Atomos.Ag, Atomos.Au
     };
 
-    // Fila de Reatividade dos Ânions (Ametais / Halogênios)
-    private static readonly List<int> ReatividadeAnions = new List<int>
+    // Fila de reatividade dos halogênios.
+    private static readonly List<int> ReatividadeHalogenios = new List<int>
     {
-        Atomos.F, Atomos.O, Atomos.Cl, Atomos.Br, Atomos.I, Atomos.S
+        Atomos.F, Atomos.Cl, Atomos.Br, Atomos.I
     };
 
-    public static bool PodeOcorrerSimplesTroca(int atomoLivre, int atomoSubstituido, bool ehCation)
+    // Metais que reagem com água fria formando hidróxido + H2.
+    private static readonly HashSet<int> ReagemComAgua = new HashSet<int>
     {
-        List<int> fila = ehCation ? ReatividadeCations : ReatividadeAnions;
+        Atomos.K, Atomos.Na, Atomos.Ca, Atomos.Ba
+    };
 
-        int idxLivre = fila.IndexOf(atomoLivre);
-        int idxSubstituido = fila.IndexOf(atomoSubstituido);
+    // Metais cujos óxidos reagem com água formando base.
+    private static readonly HashSet<int> OxidoBasicoReativo = new HashSet<int>
+    {
+        Atomos.Li, Atomos.Na, Atomos.K, Atomos.Ca, Atomos.Ba, Atomos.Mg
+    };
 
-        // Se algum elemento não estiver na lista, assume viável ou trata exceção
-        if (idxLivre == -1 || idxSubstituido == -1) return true; 
+    private static readonly HashSet<int> Alcalinos = new HashSet<int>
+    {
+        Atomos.Li, Atomos.Na, Atomos.K, Atomos.Rb, Atomos.Cs
+    };
 
-        // No índice da List: Menor Índice = Mais Reativo
-        // A reação SÓ ocorre se o elemento livre for MAIS reativo (índice menor)
-        return idxLivre < idxSubstituido;
+    private static readonly HashSet<int> Ametais = new HashSet<int>
+    {
+        Atomos.H, Atomos.He, Atomos.B, Atomos.C, Atomos.N, Atomos.O, Atomos.F, Atomos.Ne,
+        Atomos.Si, Atomos.P, Atomos.S, Atomos.Cl, Atomos.Ar, Atomos.As, Atomos.Se,
+        Atomos.Br, Atomos.Kr, Atomos.Te, Atomos.I, Atomos.Xe, Atomos.At, Atomos.Rn
+    };
+
+    // ── Classificação ────────────────────────────────────────────────────────
+
+    public static bool EhMetal(int z) => !Ametais.Contains(z);
+
+    public static bool EhHalogenio(int z) => ReatividadeHalogenios.Contains(z);
+
+    // Elemento único de um íon monoatômico ({Na:1} → Na); 0 se for poliatômico.
+    public static int ElementoDoIon(Dictionary<int, int> ion) =>
+        ion != null && ion.Count == 1 && ion.Values.First() == 1 ? ion.Keys.First() : 0;
+
+    public static bool EhAgua(DadosSubstancia s) =>
+        s != null && s.Nome == "H2O";
+
+    public static bool EhAmonio(Dictionary<int, int> cation) =>
+        DadosSubstancia.Chave(cation) == DadosSubstancia.Chave(BancoSubstancias.NH4);
+
+    public static bool EhOxidoMetalico(DadosSubstancia s) =>
+        s.Funcao == FuncaoQuimica.Oxido && EhMetal(ElementoDoIon(s.Cation));
+
+    public static bool EhOxidoBasicoReativo(DadosSubstancia s) =>
+        EhOxidoMetalico(s) && OxidoBasicoReativo.Contains(ElementoDoIon(s.Cation));
+
+    public static bool EhIonComposto(DadosSubstancia s) =>
+        s.EhIonico && s.Funcao != FuncaoQuimica.Oxido;
+
+    // ── Reatividade ──────────────────────────────────────────────────────────
+
+    // true se o metal (ou H) livre é mais reativo que o que está no composto.
+    public static bool DeslocaMetal(int livre, int noComposto)
+    {
+        int iLivre = ReatividadeMetais.IndexOf(livre);
+        int iComposto = ReatividadeMetais.IndexOf(noComposto);
+        return iLivre >= 0 && iComposto >= 0 && iLivre < iComposto;
     }
 
-    public static bool PodeOcorrerDuplaTroca(DadosSubstancia subA, DadosSubstancia subB, string formulaA, string formulaB)
+    public static bool DeslocaHalogenio(int livre, int noComposto)
     {
-        // 1. Ácido + Base -> Sal + Água (Sempre ocorre / Neutralização)
-        bool aEhAcido = formulaA.StartsWith("H") && formulaA != "H2O";
-        bool bEhAcido = formulaB.StartsWith("H") && formulaB != "H2O";
-        bool aEhBase = formulaA.EndsWith("OH");
-        bool bEhBase = formulaB.EndsWith("OH");
+        int iLivre = ReatividadeHalogenios.IndexOf(livre);
+        int iComposto = ReatividadeHalogenios.IndexOf(noComposto);
+        return iLivre >= 0 && iComposto >= 0 && iLivre < iComposto;
+    }
 
-        if ((aEhAcido && bEhBase) || (bEhAcido && aEhBase)) 
-            return true; // Forma H2O
+    public static bool ReageComAgua(int metal) => ReagemComAgua.Contains(metal);
 
-        // 2. Formação de Gases Voláteis (Ex: Carbonatos/Sulfetos reagindo com Ácidos)
-        bool temCarbonato = formulaA.Contains("CO3") || formulaB.Contains("CO3");
-        bool temSulfeto = formulaA.EndsWith("S") || formulaB.EndsWith("S");
-        if ((aEhAcido || bEhAcido) && (temCarbonato || temSulfeto)) 
-            return true; // Libera CO2 ou H2S
+    // ── Solubilidade (tabela prática) ────────────────────────────────────────
 
-        // 3. Formação de Precipitados Insolúveis (Tabela Prática de Solubilidade)
-        // Sais Insolúveis Clássicos: AgCl, PbCl2, BaSO4, CaCO3, Fe(OH)3, etc.
-        if (IraFormarPrecipitado(formulaA, formulaB)) 
+    public static bool EhInsoluvel(Dictionary<int, int> cation, Dictionary<int, int> anion)
+    {
+        int metal = ElementoDoIon(cation);
+
+        // Sais de metais alcalinos e de amônio são solúveis.
+        if (Alcalinos.Contains(metal) || EhAmonio(cation) || metal == Atomos.H)
+            return false;
+
+        string a = DadosSubstancia.Chave(anion);
+
+        // Nitratos: sempre solúveis.
+        if (a == DadosSubstancia.Chave(BancoSubstancias.NO3))
+            return false;
+
+        int elementoAnion = ElementoDoIon(anion);
+
+        // Cloretos, brometos, iodetos: insolúveis com Ag, Pb, Hg.
+        if (elementoAnion == Atomos.Cl || elementoAnion == Atomos.Br || elementoAnion == Atomos.I)
+            return metal == Atomos.Ag || metal == Atomos.Pb || metal == Atomos.Hg;
+
+        // Fluoretos: insolúveis com Ca, Mg, Ba.
+        if (elementoAnion == Atomos.F)
+            return metal == Atomos.Ca || metal == Atomos.Mg || metal == Atomos.Ba;
+
+        // Sulfatos: insolúveis com Ba, Ca, Sr, Pb.
+        if (a == DadosSubstancia.Chave(BancoSubstancias.SO4))
+            return metal == Atomos.Ba || metal == Atomos.Ca || metal == Atomos.Sr || metal == Atomos.Pb;
+
+        // Hidróxidos: insolúveis exceto alcalinos, Ca, Ba, Sr.
+        if (a == DadosSubstancia.Chave(BancoSubstancias.OH))
+            return !(metal == Atomos.Ca || metal == Atomos.Ba || metal == Atomos.Sr);
+
+        // Carbonatos, fosfatos, sulfitos e sulfetos: insolúveis (exceto alcalinos/amônio, já tratados).
+        if (a == DadosSubstancia.Chave(BancoSubstancias.CO3) ||
+            a == DadosSubstancia.Chave(BancoSubstancias.PO4) ||
+            a == DadosSubstancia.Chave(BancoSubstancias.SO3) ||
+            elementoAnion == Atomos.S)
             return true;
-
-        // Se ambos os produtos forem aquosos e solúveis, os íons só 'boiam' na solução e a reação NÃO ocorre.
-        return false; 
-    }
-
-    private static bool IraFormarPrecipitado(string fA, string fB)
-    {
-        // Troca de pares simples para checar insolúveis clássicos do seu banco
-        if ((fA.Contains("Ag") || fB.Contains("Ag")) && (fA.Contains("Cl") || fB.Contains("Cl"))) return true; // AgCl é insolúvel
-        if ((fA.Contains("Ba") || fB.Contains("Ba")) && (fA.Contains("SO4") || fB.Contains("SO4"))) return true; // BaSO4 é insolúvel
-        if ((fA.Contains("Ca") || fB.Contains("Ca")) && (fA.Contains("CO3") || fB.Contains("CO3"))) return true; // CaCO3 é insolúvel
 
         return false;
     }
+
+    // pKa aproximado (1ª ionização). Quanto menor, mais forte o ácido.
+    private static readonly Dictionary<string, double> PKa = new Dictionary<string, double>
+    {
+        { "HCl", -7 }, { "HBr", -9 }, { "HI", -10 }, { "HNO3", -1.4 }, { "H2SO4", -3 },
+        { "H2SO3", 1.8 }, { "H3PO4", 2.1 }, { "HF", 3.2 }, { "HNO2", 3.3 },
+        { "H2CO3", 6.4 }, { "H2S", 7.0 }
+    };
+
+    public static bool EhAcidoForte(string acido) =>
+        PKa.TryGetValue(acido, out double pka) && pka < 0;
+
+    // true se o ácido "a" é mais forte que "b" (ácidos fortes empatam entre si).
+    public static bool AcidoMaisForte(string a, string b)
+    {
+        if (!PKa.TryGetValue(a, out double pa) || !PKa.TryGetValue(b, out double pb))
+            return false;
+        bool aForte = pa < 0, bForte = pb < 0;
+        if (aForte && bForte) return false;
+        return pa < pb;
+    }
+
+    // Precipitados que não se dissolvem em ácido: podem se formar mesmo
+    // quando a reação libera um ácido forte (HCl + AgNO3 → AgCl↓ + HNO3).
+    public static bool InsoluvelEmAcido(Dictionary<int, int> cation, Dictionary<int, int> anion)
+    {
+        int metal = ElementoDoIon(cation);
+        int elementoAnion = ElementoDoIon(anion);
+        string a = DadosSubstancia.Chave(anion);
+
+        if (metal == Atomos.Ag && (elementoAnion == Atomos.Cl || elementoAnion == Atomos.Br || elementoAnion == Atomos.I))
+            return true;
+        if (metal == Atomos.Ba && a == DadosSubstancia.Chave(BancoSubstancias.SO4))
+            return true;
+        if (elementoAnion == Atomos.S && (metal == Atomos.Cu || metal == Atomos.Ag || metal == Atomos.Pb || metal == Atomos.Hg))
+            return true;
+        return false;
+    }
+
+    // Gases que escapam numa dupla troca e servem de "força motriz".
+    public static bool EhGas(DadosSubstancia s) =>
+        s != null && (s.Nome == "CO2" || s.Nome == "SO2" || s.Nome == "H2S" || s.Nome == "NH3");
 }

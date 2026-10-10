@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Events;
 using TMPro;
+using BalanciadorQuimico;
 
 // Cria o prefab de átomo genérico e a cena "Reacao3D" que exibe as moléculas
 // balanceadas (via ReacaoTransferData) usando GerenciadorVisual3D + Atomo3D.
@@ -16,10 +17,13 @@ public static class Reacao3DSceneBuilder
     private const string kScenePath = "Assets/Scenes/Reacao3D.unity";
     private const string kSampleScenePath = "Assets/Scenes/SampleScene.unity";
 
+
+
     [MenuItem("Tools/TCC/Montar Cena 3D da Reacao")]
     public static void BuildAll()
     {
         GameObject prefab = CreateOrUpdateAtomoPrefab();
+        
         CreateReacao3DScene(prefab);
         RegisterScenesInBuildSettings();
         Debug.Log("[Reacao3DSceneBuilder] Prefab e cena 3D montados com sucesso.");
@@ -52,13 +56,19 @@ public static class Reacao3DSceneBuilder
         // Câmera
         GameObject camGO = ObjectFactory.CreateGameObject("Main Camera", typeof(Camera));
         camGO.tag = "MainCamera";
-        camGO.transform.position = new Vector3(4f, 6f, -20f);
+        camGO.transform.position = new Vector3(0f, 6f, -20f);
         camGO.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
         var cam = camGO.GetComponent<Camera>();
         cam.fieldOfView = 55f;
         cam.nearClipPlane = 0.1f;
         cam.farClipPlane = 200f;
         camGO.AddComponent<AudioListener>();
+        var cameraMovel = camGO.AddComponent<CameraMovel>();
+
+        cameraMovel.velocidade = 5f;
+        cameraMovel.velocidadeTurbo = 10f;
+        cameraMovel.sensibilidadeMouse = 2f;
+        cameraMovel.velocidadeZoom = 5f;
 
         // Luz direcional
         GameObject lightGO = ObjectFactory.CreateGameObject("Directional Light", typeof(Light));
@@ -101,6 +111,7 @@ public static class Reacao3DSceneBuilder
         tituloTxt.fontSize = 24;
         tituloTxt.alignment = TextAlignmentOptions.Center;
         tituloTxt.color = Color.white;
+        ObjectFactory.AddComponent<TituloReacao3D>(tituloGO);
 
         GameObject btnGO = TMP_DefaultControls.CreateButton(resources);
         btnGO.name = "BotaoVoltar";

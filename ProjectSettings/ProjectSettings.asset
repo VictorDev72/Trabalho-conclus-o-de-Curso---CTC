@@ -924,11 +924,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 58980e99-2055-4221-b446-008654b9b7bf
+  cloudProjectId: 0e68ba5f-b6be-4672-8f6c-c782c1f56836
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: TCC
-  organizationId: victorvitrola
+  projectName: My project
+  organizationId: cc25572
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
